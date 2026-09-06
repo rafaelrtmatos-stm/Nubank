@@ -1,0 +1,7 @@
+{
+  "name": "Nubank PJ - Nu Empresas",
+  "description": "Aplicativo Nu Empresas com autenticação, Área Pix, opções de pagamento e fluxo de transferência rápida.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
