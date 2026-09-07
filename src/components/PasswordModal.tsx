@@ -13,6 +13,15 @@ interface PasswordModalProps {
     recipientName?: string;
   };
   processingText?: string;
+  /**
+   * 'verify' (padrão): pede a senha existente. Se `existingPin` for informado,
+   * o valor digitado precisa bater com ele; caso contrário, qualquer PIN de 4
+   * dígitos é aceito (mantém compatibilidade com fluxos que não têm senha configurada).
+   * 'setup': fluxo de primeiro acesso — pede para criar e depois confirmar uma nova senha.
+   */
+  mode?: 'verify' | 'setup';
+  existingPin?: string;
+  onSetupComplete?: (pin: string) => void;
 }
 
 export const PasswordModal: React.FC<PasswordModalProps> = ({
@@ -23,16 +32,89 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
   subtitle = 'Para acessar sua conta Nu Empresas com segurança',
   contextInfo,
   processingText = 'Validando acesso...',
+  mode = 'verify',
+  existingPin,
+  onSetupComplete,
 }) => {
   const [pin, setPin] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [setupStage, setSetupStage] = useState<'create' | 'confirm'>('create');
+  const [firstPin, setFirstPin] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [shake, setShake] = useState<boolean>(false);
 
   useEffect(() => {
     if (isOpen) {
       setPin('');
       setIsProcessing(false);
+      setSetupStage('create');
+      setFirstPin('');
+      setErrorMessage('');
+      setShake(false);
     }
   }, [isOpen]);
+
+  const triggerError = (message: string, resetToStage?: 'create') => {
+    setErrorMessage(message);
+    setShake(true);
+    setTimeout(() => {
+      setShake(false);
+      setPin('');
+      setIsProcessing(false);
+      if (resetToStage) {
+        setSetupStage(resetToStage);
+        setFirstPin('');
+      }
+    }, 550);
+  };
+
+  const handleDigit = (digit: string) => {
+    if (pin.length < 4 && !isProcessing) {
+      const newPin = pin + digit;
+      setPin(newPin);
+      setErrorMessage('');
+
+      if (newPin.length === 4) {
+        setIsProcessing(true);
+
+        if (mode === 'setup') {
+          if (setupStage === 'create') {
+            setTimeout(() => {
+              setFirstPin(newPin);
+              setPin('');
+              setIsProcessing(false);
+              setSetupStage('confirm');
+            }, 500);
+          } else {
+            setTimeout(() => {
+              if (newPin === firstPin) {
+                onSetupComplete?.(newPin);
+                setIsProcessing(false);
+                onSuccess();
+              } else {
+                triggerError('As senhas não coincidem. Vamos tentar de novo.', 'create');
+              }
+            }, 500);
+          }
+        } else {
+          setTimeout(() => {
+            if (!existingPin || newPin === existingPin) {
+              setIsProcessing(false);
+              onSuccess();
+            } else {
+              triggerError('Senha incorreta. Tente novamente.');
+            }
+          }, 750);
+        }
+      }
+    }
+  };
+
+  const handleDelete = () => {
+    if (pin.length > 0 && !isProcessing) {
+      setPin(pin.slice(0, -1));
+    }
+  };
 
   // Support physical keyboard on desktop
   useEffect(() => {
@@ -50,30 +132,23 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isProcessing, pin]);
-
-  const handleDigit = (digit: string) => {
-    if (pin.length < 4 && !isProcessing) {
-      const newPin = pin + digit;
-      setPin(newPin);
-
-      if (newPin.length === 4) {
-        setIsProcessing(true);
-        setTimeout(() => {
-          setIsProcessing(false);
-          onSuccess();
-        }, 750);
-      }
-    }
-  };
-
-  const handleDelete = () => {
-    if (pin.length > 0 && !isProcessing) {
-      setPin(pin.slice(0, -1));
-    }
-  };
+  }, [isOpen, isProcessing, pin, setupStage, firstPin]);
 
   if (!isOpen) return null;
+
+  const resolvedTitle = mode === 'setup'
+    ? (setupStage === 'create' ? 'Crie sua senha de 4 dígitos' : 'Confirme sua nova senha')
+    : title;
+
+  const resolvedSubtitle = mode === 'setup'
+    ? (setupStage === 'create'
+        ? 'Essa será a senha usada para acessar o app daqui pra frente'
+        : 'Digite novamente a mesma senha para confirmar')
+    : subtitle;
+
+  const resolvedProcessingText = mode === 'setup'
+    ? (setupStage === 'create' ? 'Salvando primeira etapa...' : 'Criando sua senha...')
+    : processingText;
 
   return (
     <AnimatePresence>
@@ -132,14 +207,18 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
               <ShieldCheck className="w-5 h-5" />
             </div>
             <p className="text-[17px] font-bold text-neutral-900 leading-snug">
-              {title}
+              {resolvedTitle}
             </p>
             <p className="text-xs text-neutral-500 mt-1 px-4 leading-relaxed">
-              {subtitle}
+              {resolvedSubtitle}
             </p>
 
             {/* 4 Pin Indicator Dots */}
-            <div className="flex justify-center items-center gap-4 my-5">
+            <motion.div
+              animate={shake ? { x: [0, -8, 8, -8, 8, 0] } : { x: 0 }}
+              transition={{ duration: 0.4 }}
+              className="flex justify-center items-center gap-4 my-5"
+            >
               {[0, 1, 2, 3].map((index) => {
                 const filled = pin.length > index;
                 return (
@@ -150,14 +229,27 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
                     }}
                     transition={{ duration: 0.15 }}
                     className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                      filled
+                      errorMessage
+                        ? 'bg-red-500 shadow-sm shadow-red-500/40'
+                        : filled
                         ? 'bg-[#820AD1] shadow-sm shadow-purple-500/40'
                         : 'border-2 border-neutral-300 bg-neutral-100'
                     }`}
                   />
                 );
               })}
-            </div>
+            </motion.div>
+
+            {/* Error State */}
+            {errorMessage && !isProcessing && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-xs font-semibold text-red-500 -mt-2 mb-2"
+              >
+                {errorMessage}
+              </motion.p>
+            )}
 
             {/* Processing State */}
             {isProcessing && (
@@ -167,8 +259,15 @@ export const PasswordModal: React.FC<PasswordModalProps> = ({
                 className="flex items-center justify-center gap-2 text-xs font-semibold text-[#820AD1] py-1"
               >
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>{processingText}</span>
+                <span>{resolvedProcessingText}</span>
               </motion.div>
+            )}
+
+            {/* Setup progress hint */}
+            {mode === 'setup' && !isProcessing && !errorMessage && (
+              <p className="text-[11px] text-neutral-400 -mt-1 mb-1">
+                Etapa {setupStage === 'create' ? '1' : '2'} de 2
+              </p>
             )}
           </div>
 

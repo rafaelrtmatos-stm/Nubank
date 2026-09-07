@@ -35,17 +35,6 @@ export const INITIAL_CONTACTS: Contact[] = [
     pixKey: '61557754000130'
   },
   {
-    id: '4',
-    name: 'Rafael Tavares Matos 02580326260',
-    initials: 'RT',
-    document: '025.803.262-60',
-    institution: 'NU PAGAMENTOS - IP',
-    accountType: 'Conta Corrente',
-    agency: '0001',
-    account: '79827260-9',
-    pixKey: '02580326260'
-  },
-  {
     id: '5',
     name: '29 048 207 Octavio Augusto Dantas da Silva',
     initials: 'OA',
@@ -69,46 +58,23 @@ export const INITIAL_CONTACTS: Contact[] = [
   }
 ];
 
-export const INITIAL_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-1',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'CLIENTE EMPRESA ALFA - Pix',
-    amount: 1450.00,
-    date: 'Hoje, 09:15'
-  },
-  {
-    id: 'tx-2',
-    type: 'bill_payment',
-    title: 'Pagamento de boleto',
-    subtitle: 'ENERGIA ELETRICA S.A.',
-    amount: -320.45,
-    date: 'Ontem, 16:40'
-  },
-  {
-    id: 'tx-3',
-    type: 'pix_send',
-    title: 'Transferência enviada',
-    subtitle: 'LILIAN MARIA TAVARES MATOS',
-    amount: -150.00,
-    date: '27 AGO, 14:20',
-    recipient: INITIAL_CONTACTS[0]
-  }
-];
+export const INITIAL_TRANSACTIONS: Transaction[] = [];
 
 export const DEFAULT_APP_DATA: AppCustomData = {
-  userName: 'Rafael',
-  userInitials: 'RT',
-  agency: '0001',
-  accountNumber: '79827260-9',
-  companyName: 'RAFAEL TAVARES MATOS 02580326260',
-  cnpj: '28884125000140',
+  userName: '',
+  userInitials: '',
+  agency: '',
+  accountNumber: '',
+  companyName: '',
+  cnpj: '',
   accountTitle: 'Conta Nu Empresas',
 
-  balance: 821.64,
-  creditCardLimit: 'R$ 8.500,00',
-  loanLimit: 'R$ 25.000',
+  // Vazio até o usuário definir uma senha de acesso no primeiro uso do app
+  accessPin: '',
+
+  balance: 0,
+  creditCardLimit: 'R$ 0,00',
+  loanLimit: 'R$ 0',
 
   showReminder: true,
   reminderTitle: 'Lembrete: Realize o Pagamento',
@@ -124,8 +90,8 @@ export const DEFAULT_APP_DATA: AppCustomData = {
   defaultTransferAmount: 0.00,
 
   loginTitle: 'Queremos deixar seu roxinho ainda mais protegido. Por isso, sempre vamos pedir uma senha para acessar o aplicativo.',
-  loginButtonText: 'Usar senha do celular',
-  loginHelperText: 'Essa senha é a mesma forma de validação que você usa para desbloquear seu celular.',
+  loginButtonText: 'Criar senha de acesso',
+  loginHelperText: 'Essa senha será usada sempre que você abrir o app.',
   skipIntroText: 'Pular esta explicação da próxima vez...',
 
   // Configuração padrão da Simulação Pix

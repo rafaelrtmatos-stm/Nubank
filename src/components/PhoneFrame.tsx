@@ -29,6 +29,7 @@ export const PhoneFrame: React.FC<PhoneFrameProps> = ({
   }, []);
 
   const screens: { id: ScreenName; label: string }[] = [
+    { id: 'Splash', label: '0. Splash' },
     { id: 'Login', label: '1. Login' },
     { id: 'Home', label: '2. Home PJ' },
     { id: 'PaymentOptions', label: '3. Opções Pagamento' },
@@ -106,7 +107,11 @@ export const PhoneFrame: React.FC<PhoneFrameProps> = ({
             <div className="relative w-full h-full bg-white rounded-[38px] overflow-hidden flex flex-col shadow-inner">
               {/* iOS / Mobile Status Bar */}
               <div className={`px-6 pt-3 pb-1 flex items-center justify-between text-xs font-semibold z-30 transition-colors ${
-                currentScreen === 'Home' ? 'bg-[#5f259f] text-white' : 'bg-white text-neutral-900'
+                currentScreen === 'Home'
+                  ? 'bg-[#5f259f] text-white'
+                  : currentScreen === 'Splash'
+                  ? 'bg-[#781AC8] text-white'
+                  : 'bg-white text-neutral-900'
               }`}>
                 <span className="font-bold tracking-tight text-[13px]">{time}</span>
                 {/* Dynamic Island / Notch pill */}

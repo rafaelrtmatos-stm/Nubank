@@ -28,6 +28,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<any>(null);
 
+  const isFirstAccess = !appData.accessPin;
+
   const handleLogoClick = () => {
     const newCount = clickCount + 1;
     setClickCount(newCount);
@@ -54,6 +56,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const handlePasswordSuccess = () => {
     setIsPasswordModalOpen(false);
     onNavigate('Home');
+  };
+
+  const handlePinCreated = (pin: string) => {
+    onUpdateField('accessPin', pin);
   };
 
   return (
@@ -127,20 +133,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           >
             <Fingerprint className="w-5 h-5" />
             <span>
-              <EditableText
-                value={appData.loginButtonText}
-                onSave={(val) => onUpdateField('loginButtonText', val)}
-                isInlineEditMode={isInlineEditMode}
-              />
+              {isFirstAccess ? (
+                'Criar senha de acesso'
+              ) : (
+                <EditableText
+                  value={appData.loginButtonText}
+                  onSave={(val) => onUpdateField('loginButtonText', val)}
+                  isInlineEditMode={isInlineEditMode}
+                />
+              )}
             </span>
           </button>
 
           <p className="text-xs text-neutral-500 text-center mt-3.5 leading-relaxed px-4">
-            <EditableText
-              value={appData.loginHelperText}
-              onSave={(val) => onUpdateField('loginHelperText', val)}
-              isInlineEditMode={isInlineEditMode}
-            />
+            {isFirstAccess ? (
+              'Essa senha será usada sempre que você abrir o app.'
+            ) : (
+              <EditableText
+                value={appData.loginHelperText}
+                onSave={(val) => onUpdateField('loginHelperText', val)}
+                isInlineEditMode={isInlineEditMode}
+              />
+            )}
           </p>
         </div>
 
@@ -172,7 +186,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         </div>
       </motion.div>
 
-      {/* Password Prompt Modal upon clicking access */}
+      {/* Password Prompt Modal upon clicking access - cria senha no 1º acesso, valida nos seguintes */}
       <PasswordModal
         isOpen={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
@@ -180,6 +194,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         title="Digite sua senha de 4 dígitos"
         subtitle="A mesma senha que você usa para acessar sua conta Nu Empresas"
         processingText="Validando acesso..."
+        mode={isFirstAccess ? 'setup' : 'verify'}
+        existingPin={appData.accessPin}
+        onSetupComplete={handlePinCreated}
       />
     </div>
   );

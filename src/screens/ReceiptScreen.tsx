@@ -62,13 +62,13 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
 
   // Payer (Origem) info from appData registered in system
   const payerName = isBillPayment
-    ? (appData.userName || 'RAFAEL TAVARES MATOS')
-    : (appData.companyName || appData.userName || 'RAFAEL TAVARES MATOS 02580326260');
+    ? (appData.userName || 'TITULAR DA CONTA')
+    : (appData.companyName || appData.userName || 'TITULAR DA CONTA');
   const payerInstitution = 'NU PAGAMENTOS - IP';
   const payerAgency = appData.agency || '0001';
-  const payerAccount = appData.accountNumber || '79827260-9';
-  const payerCnpj = appData.cnpj?.replace(/\D/g, '') || '28884125000140';
-  const payerCpfMasked = '...803.262-..';
+  const payerAccount = appData.accountNumber || '00000000-0';
+  const payerCnpj = appData.cnpj?.replace(/\D/g, '') || '';
+  const payerCpfMasked = '...000.000-..';
 
   // Recipient (Destino / Beneficiário) info from recipient searched/selected
   const destName = recipient.name || (isBillPayment ? 'EQUATORIAL PARA DISTRIBUIDORA DE ENERGIA S.A.' : 'José Miguel Ospino Pinto');

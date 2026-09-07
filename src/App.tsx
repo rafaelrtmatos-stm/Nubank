@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { SplashScreen } from './screens/SplashScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { HomeScreen } from './screens/HomeScreen';
 import { PaymentOptionsScreen } from './screens/PaymentOptionsScreen';
@@ -23,8 +24,8 @@ import { CheckCircle2, Sliders, Edit3, ArrowDownLeft } from 'lucide-react';
 const STORAGE_KEY = 'nu_empresas_custom_data_v2';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<ScreenName>('Login');
-  const [screenStack, setScreenStack] = useState<ScreenName[]>(['Login']);
+  const [currentScreen, setCurrentScreen] = useState<ScreenName>('Splash');
+  const [screenStack, setScreenStack] = useState<ScreenName[]>(['Splash']);
   
   // App Custom Data (Persistent in localStorage)
   const [appData, setAppData] = useState<AppCustomData>(() => {
@@ -243,6 +244,24 @@ export default function App() {
       {/* Screen Content - 100% Fullscreen Mobile App Style */}
       <div className="flex-1 w-full h-full relative overflow-hidden flex flex-col">
         <AnimatePresence mode="wait">
+          {currentScreen === 'Splash' && (
+            <motion.div
+              key="splash"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="w-full h-full flex-1"
+            >
+              <SplashScreen
+                onFinish={() => {
+                  setScreenStack(['Login']);
+                  setCurrentScreen('Login');
+                }}
+              />
+            </motion.div>
+          )}
+
           {currentScreen === 'Login' && (
             <motion.div
               key="login"

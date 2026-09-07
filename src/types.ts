@@ -1,4 +1,5 @@
 export type ScreenName = 
+  | 'Splash'
   | 'Login' 
   | 'Home' 
   | 'PaymentOptions' 
@@ -52,6 +53,9 @@ export interface AppCustomData {
   companyName: string;
   cnpj: string;
   accountTitle: string;
+
+  // Senha de acesso escolhida pelo usuário no primeiro uso (vazio = ainda não configurada)
+  accessPin: string;
 
   // Saldos e Limites
   balance: number;
