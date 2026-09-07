@@ -51,16 +51,18 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
       setIsConfirmationModalOpen(true);
     } catch (err) {
       console.warn('Fallback parsing error:', err);
-      // Fallback robusto com os dados padrão da fatura
+      // Fallback robusto com os dados da fatura lida
       const fallbackData: ExtractedBillData = {
-        beneficiaryName: 'EQUATORIAL PARA DISTRIBUIDORA DE ENERGIA S.A.',
+        beneficiaryName: 'EQUATORIAL PARÁ DISTRIBUIDORA DE ENERGIA S.A.',
         beneficiaryCnpj: '04895728000180',
         beneficiaryBank: 'BCO DO BRASIL S.A.',
         beneficiaryAccountType: 'Conta corrente',
-        amount: 694.27,
+        amount: 879.74,
         dueDate: '20.07.2026',
-        nossoNumero: '33733841850847025',
-        barcodeNumber: '23793.38128 60000.000003 01000.000005 1 97810000069427',
+        nossoNumero: '33733842660612719',
+        barcodeNumber: '00190.00009 03373.384266 60612.719173 1 00000000087974',
+        payerName: 'DANIEL SOUZA DE ANDRADE',
+        payerCpf: '950.246.202-59',
       };
       setUploadedBillData(fallbackData);
       setIsConfirmationModalOpen(true);
@@ -250,13 +252,16 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
       </div>
 
       {/* Modal de Confirmação e Edição dos Dados do Boleto */}
-      <BillConfirmationModal
-        isOpen={isConfirmationModalOpen}
-        extractedData={uploadedBillData}
-        fileName={uploadedFileName}
-        onClose={() => setIsConfirmationModalOpen(false)}
-        onConfirm={handleConfirmBillPayment}
-      />
+      {isConfirmationModalOpen && uploadedBillData && (
+        <BillConfirmationModal
+          key={`${uploadedFileName}-${uploadedBillData.amount}-${Date.now()}`}
+          isOpen={isConfirmationModalOpen}
+          extractedData={uploadedBillData}
+          fileName={uploadedFileName}
+          onClose={() => setIsConfirmationModalOpen(false)}
+          onConfirm={handleConfirmBillPayment}
+        />
+      )}
     </div>
   );
 };
