@@ -279,6 +279,24 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                   </span>
                 </div>
 
+                {transferData?.nossoNumero && (
+                  <div className="flex justify-between items-start pt-1">
+                    <span className="text-neutral-900 font-normal shrink-0">Nosso número</span>
+                    <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] break-all leading-relaxed font-mono">
+                      {transferData.nossoNumero}
+                    </span>
+                  </div>
+                )}
+
+                {transferData?.barcodeNumber && (
+                  <div className="flex justify-between items-start pt-1">
+                    <span className="text-neutral-900 font-normal shrink-0">Código de barras</span>
+                    <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] break-all leading-relaxed font-mono">
+                      {transferData.barcodeNumber}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-start pt-1">
                   <span className="text-neutral-900 font-normal shrink-0">Descrição original</span>
                   <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] leading-relaxed">

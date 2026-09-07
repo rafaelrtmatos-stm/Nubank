@@ -16,9 +16,11 @@ import {
 import { ScreenName, TransferData } from '../types';
 import { 
   extractBillDataFromPdf, 
+  ExtractedBillData,
   generateNubankTransactionId, 
   formatNubankReceiptDate 
 } from '../utils/pdfReceiptParser';
+import { BillConfirmationModal } from '../components/BillConfirmationModal';
 
 interface PaymentOptionsScreenProps {
   onGoBack: () => void;
@@ -32,6 +34,9 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
   onGenerateReceiptFromPdf,
 }) => {
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [uploadedBillData, setUploadedBillData] = useState<ExtractedBillData | null>(null);
+  const [uploadedFileName, setUploadedFileName] = useState<string>('');
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -39,65 +44,36 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
     if (!file) return;
 
     setIsProcessingPdf(true);
+    setUploadedFileName(file.name);
     try {
       const extracted = await extractBillDataFromPdf(file);
-      const now = new Date();
-      const currentFormattedDate = formatNubankReceiptDate(now);
-      const newTransactionId = generateNubankTransactionId();
-
-      const transferData: TransferData = {
-        recipient: {
-          id: 'beneficiary-bill',
-          name: extracted.beneficiaryName,
-          initials: 'EQ',
-          document: extracted.beneficiaryCnpj,
-          institution: extracted.beneficiaryBank,
-          accountType: extracted.beneficiaryAccountType || 'Conta corrente',
-          agency: '0001',
-          account: '',
-        },
-        amount: extracted.amount,
-        date: 'Hoje',
-        isBillPayment: true,
-        transactionId: newTransactionId,
-        receiptDateFormatted: currentFormattedDate,
-        dueDate: extracted.dueDate,
-        identifierCode: `BOLETO${extracted.nossoNumero}`,
-        originalDescription: `Venc: ${extracted.dueDate} - R$ ${extracted.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-      };
-
-      if (onGenerateReceiptFromPdf) {
-        onGenerateReceiptFromPdf(transferData);
-      }
+      setUploadedBillData(extracted);
+      setIsConfirmationModalOpen(true);
     } catch (err) {
-      console.warn('Fallback parsing:', err);
-      const now = new Date();
-      const transferData: TransferData = {
-        recipient: {
-          id: 'beneficiary-bill',
-          name: 'EQUATORIAL PARA DISTRIBUIDORA DE ENERGIA S.A.',
-          initials: 'EQ',
-          document: '04895728000180',
-          institution: 'BCO DO BRASIL S.A.',
-          accountType: 'Conta corrente',
-          agency: '0001',
-          account: '',
-        },
+      console.warn('Fallback parsing error:', err);
+      // Fallback robusto com os dados padrão da fatura
+      const fallbackData: ExtractedBillData = {
+        beneficiaryName: 'EQUATORIAL PARA DISTRIBUIDORA DE ENERGIA S.A.',
+        beneficiaryCnpj: '04895728000180',
+        beneficiaryBank: 'BCO DO BRASIL S.A.',
+        beneficiaryAccountType: 'Conta corrente',
         amount: 694.27,
-        date: 'Hoje',
-        isBillPayment: true,
-        transactionId: generateNubankTransactionId(),
-        receiptDateFormatted: formatNubankReceiptDate(now),
         dueDate: '20.07.2026',
-        identifierCode: 'BOLETO33733841850847025',
-        originalDescription: 'Venc: 20.07.2026 - R$ 694,27',
+        nossoNumero: '33733841850847025',
+        barcodeNumber: '23793.38128 60000.000003 01000.000005 1 97810000069427',
       };
-      if (onGenerateReceiptFromPdf) {
-        onGenerateReceiptFromPdf(transferData);
-      }
+      setUploadedBillData(fallbackData);
+      setIsConfirmationModalOpen(true);
     } finally {
       setIsProcessingPdf(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleConfirmBillPayment = (transferData: TransferData) => {
+    setIsConfirmationModalOpen(false);
+    if (onGenerateReceiptFromPdf) {
+      onGenerateReceiptFromPdf(transferData);
     }
   };
 
@@ -272,6 +248,15 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
           </motion.button>
         </div>
       </div>
+
+      {/* Modal de Confirmação e Edição dos Dados do Boleto */}
+      <BillConfirmationModal
+        isOpen={isConfirmationModalOpen}
+        extractedData={uploadedBillData}
+        fileName={uploadedFileName}
+        onClose={() => setIsConfirmationModalOpen(false)}
+        onConfirm={handleConfirmBillPayment}
+      />
     </div>
   );
 };

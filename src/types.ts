@@ -39,6 +39,8 @@ export interface TransferData {
   isBillPayment?: boolean;
   dueDate?: string;
   identifierCode?: string;
+  nossoNumero?: string;
+  barcodeNumber?: string;
   originalDescription?: string;
   transactionId?: string;
   receiptDateFormatted?: string;

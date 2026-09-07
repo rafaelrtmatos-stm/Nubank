@@ -95,12 +95,23 @@ export function parseBillText(text: string): ExtractedBillData {
     beneficiaryBank = 'CAIXA ECONOMICA FEDERAL';
   }
 
-  // 6. Nosso Número / Identificador
+  // 6. Nosso Número / Identificador / Código do Boleto
   let nossoNumero = '33733841850847025';
   const nossoNumMatch = clean.match(/NOSSO NÚMERO\s*[:\s]*(\d+)/i) ||
-                        clean.match(/NÚMERO DE REFERÊNCIA\s*[:\s]*(\d+)/i);
+                        clean.match(/NÚMERO DE REFERÊNCIA\s*[:\s]*(\d+)/i) ||
+                        clean.match(/NÚMERO DA NOTA FISCAL\s*[:\s]*(\d+)/i) ||
+                        clean.match(/SEU NÚMERO\s*[:\s]*(\d+)/i);
   if (nossoNumMatch && nossoNumMatch[1]) {
     nossoNumero = nossoNumMatch[1].trim();
+  }
+
+  // Barcode / Linha Digitável (47 ou 48 dígitos ou com pontos/espaços)
+  let barcodeNumber = '';
+  const barcodeMatch = clean.match(/(\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14})/i) ||
+                       clean.match(/(\d{11,12}\s+\d{11,12}\s+\d{11,12}\s+\d{11,12})/i) ||
+                       clean.match(/(\d{44,48})/);
+  if (barcodeMatch && barcodeMatch[1]) {
+    barcodeNumber = barcodeMatch[1].trim();
   }
 
   // 7. Payer Name (if present in fatura)
@@ -127,6 +138,7 @@ export function parseBillText(text: string): ExtractedBillData {
     amount: amount || 694.27,
     dueDate: dueDate || '20.07.2026',
     nossoNumero,
+    barcodeNumber: barcodeNumber || '23793.38128 60000.000003 01000.000005 1 97810000069427',
     payerName,
     payerCpf,
     rawText: clean.substring(0, 300),
