@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+}
+
+/* Safe area utilities for mobile devices (iPhone notch, Dynamic Island, Android punch hole) */
+.safe-top-header {
+  padding-top: max(env(safe-area-inset-top, 0px), 3.25rem);
+}
+
+.safe-top-bar {
+  padding-top: max(env(safe-area-inset-top, 0px), 2.75rem);
+}

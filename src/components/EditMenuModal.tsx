@@ -153,7 +153,13 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div 
+      className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
+      style={{ 
+        paddingTop: 'max(env(safe-area-inset-top, 0px), 1.5rem)',
+        paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 1rem)' 
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -180,7 +186,8 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer transition-colors"
+            className="w-10 h-10 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-white cursor-pointer transition-all"
+            aria-label="Fechar editor"
           >
             <X className="w-5 h-5" />
           </button>

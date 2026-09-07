@@ -64,7 +64,8 @@ export const QuickBalanceModal: React.FC<QuickBalanceModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-neutral-100 text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+              className="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 active:scale-95 flex items-center justify-center text-neutral-600 transition-all cursor-pointer"
+              aria-label="Fechar"
             >
               <X className="w-5 h-5" />
             </button>

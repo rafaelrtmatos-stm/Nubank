@@ -16,27 +16,32 @@ import { Contact } from '../types';
 interface AreaPixScreenProps {
   onGoBack: () => void;
   onNavigateTransfer: (contact?: Contact) => void;
+  onNavigateScanQrCode: () => void;
   contacts: Contact[];
 }
 
 export const AreaPixScreen: React.FC<AreaPixScreenProps> = ({
   onGoBack,
   onNavigateTransfer,
+  onNavigateScanQrCode,
   contacts,
 }) => {
   return (
     <div className="flex flex-col h-full bg-white select-none overflow-y-auto pb-10">
-      {/* Top Close Bar */}
-      <div className="p-5 pb-2 flex items-center justify-between">
+      {/* Top Close Bar with Safe Area */}
+      <div 
+        className="px-5 pb-3 flex items-center justify-between shrink-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3rem)' }}
+      >
         <button
           id="btn-close-area-pix"
           onClick={onGoBack}
-          className="w-10 h-10 -ml-2 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer text-neutral-600"
+          className="w-11 h-11 -ml-2 rounded-full hover:bg-neutral-100 active:scale-95 flex items-center justify-center transition-all cursor-pointer text-neutral-800"
           aria-label="Fechar Área Pix"
         >
-          <X className="w-7 h-7" />
+          <X className="w-7 h-7 stroke-[2.2]" />
         </button>
-        <span className="text-xs font-bold text-[#820AD1] bg-purple-50 px-2.5 py-1 rounded-full">
+        <span className="text-xs font-bold text-[#820AD1] bg-purple-50 px-3 py-1 rounded-full">
           Pix PJ 24h
         </span>
       </div>
@@ -83,7 +88,7 @@ export const AreaPixScreen: React.FC<AreaPixScreenProps> = ({
           {/* Ler QR Code */}
           <button
             id="btn-pix-qrcode"
-            onClick={() => alert("Abrindo câmera para escanear QR Code Pix...")}
+            onClick={onNavigateScanQrCode}
             className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
           >
             <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">

@@ -91,15 +91,18 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
         id="payment-upload-pdf-input"
       />
 
-      {/* Top Close Bar */}
-      <div className="p-5 pb-2">
+      {/* Top Close Bar with Safe Area */}
+      <div 
+        className="px-5 pb-3 shrink-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3rem)' }}
+      >
         <button
           id="btn-close-payment-options"
           onClick={onGoBack}
-          className="w-10 h-10 -ml-2 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer text-neutral-600"
+          className="w-11 h-11 -ml-2 rounded-full hover:bg-neutral-100 active:scale-95 flex items-center justify-center transition-all cursor-pointer text-neutral-800"
           aria-label="Fechar opções de pagamento"
         >
-          <X className="w-7 h-7" />
+          <X className="w-7 h-7 stroke-[2.2]" />
         </button>
       </div>
 

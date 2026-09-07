@@ -3,78 +3,142 @@ import { AppCustomData, Contact, Transaction } from '../types';
 export const INITIAL_CONTACTS: Contact[] = [
   {
     id: '1',
-    name: 'V Mendes Ribeiro Comercio Ltda',
-    initials: 'VM',
-    document: '42.189.204/0001-90',
-    institution: 'BCO DO BRASIL S.A.',
+    name: 'Papelaria & Suprimentos Modelo Ltda',
+    initials: 'PM',
+    document: '00.123.456/0001-00',
+    institution: 'Nu Pagamentos S.A.',
     accountType: 'Conta Corrente PJ',
     agency: '0001',
-    account: '279399852-7',
-    pixKey: 'financeiro@vmendes.com.br'
+    account: '10928374-5',
+    pixKey: 'financeiro@papelariamodelo.exemplo.com'
   },
   {
     id: '2',
-    name: 'José Miguel Ospino Pinto',
-    initials: 'JP',
-    document: '***.451.890-**',
-    institution: 'NU PAGAMENTOS - IP',
-    accountType: 'Conta de pagamentos',
+    name: 'Tech Inovação Serviços Digitais Ltda',
+    initials: 'TI',
+    document: '11.222.333/0001-44',
+    institution: 'Nu Pagamentos S.A.',
+    accountType: 'Conta de pagamentos PJ',
     agency: '0001',
-    account: '279399852-7',
-    pixKey: 'jose.pinto@email.com'
+    account: '98472019-3',
+    pixKey: 'contato@techinovacao.exemplo.com'
   },
   {
     id: '3',
-    name: '61.557.754 Williams Caleb Ramos Rodrigues',
-    initials: 'WC',
-    document: '61.557.754/0001-30',
-    institution: 'NU PAGAMENTOS - IP',
-    accountType: 'Conta de pagamentos',
+    name: 'Distribuidora Exemplo de Alimentos ME',
+    initials: 'DA',
+    document: '22.333.444/0001-55',
+    institution: 'BANCO BRADESCO S.A.',
+    accountType: 'Conta Jurídica PJ',
     agency: '0001',
-    account: '18492048-2',
-    pixKey: '61557754000130'
+    account: '55432198-0',
+    pixKey: '22333444000155'
+  },
+  {
+    id: '4',
+    name: 'Lucas Silva (Cliente Exemplo)',
+    initials: 'LS',
+    document: '***.123.456-**',
+    institution: 'BANCO ITAÚ UNIBANCO S.A.',
+    accountType: 'Conta Corrente',
+    agency: '0001',
+    account: '33495810-7',
+    pixKey: 'lucas.exemplo@emailficticio.com'
   },
   {
     id: '5',
-    name: '29 048 207 Octavio Augusto Dantas da Silva',
-    initials: 'OA',
-    document: '29.048.207/0001-14',
-    institution: 'BANCO BRADESCO S.A.',
-    accountType: 'Conta Corrente PJ',
+    name: 'Marina Oliveira (Consultoria Fictícia)',
+    initials: 'MO',
+    document: '***.987.654-**',
+    institution: 'Nu Pagamentos S.A.',
+    accountType: 'Conta Pessoa Física',
     agency: '0001',
-    account: '39485721-0',
-    pixKey: '29048207000114'
-  },
-  {
-    id: '6',
-    name: '49.181.668 Tiago Pinheiro Rodrigues',
-    initials: 'TP',
-    document: '49.181.668/0001-85',
-    institution: 'BANCO ITAÚ UNIBANCO S.A.',
-    accountType: 'Conta Jurídica PJ',
-    agency: '0001',
-    account: '58473920-1',
-    pixKey: '49181668000185'
+    account: '77651092-4',
+    pixKey: 'marina.consultoria@emailficticio.com'
   }
 ];
 
-export const INITIAL_TRANSACTIONS: Transaction[] = [];
+export const INITIAL_TRANSACTIONS: Transaction[] = [
+  {
+    id: 'tx-1',
+    title: 'Transferência enviada',
+    subtitle: 'Papelaria & Suprimentos Modelo Ltda',
+    amount: -340.50,
+    date: 'Hoje, 14:22',
+    category: 'Suprimentos',
+    type: 'pix_send'
+  },
+  {
+    id: 'tx-2',
+    title: 'Transferência recebida',
+    subtitle: 'Tech Inovação Serviços Digitais Ltda',
+    amount: 1850.00,
+    date: 'Hoje, 10:15',
+    category: 'Vendas',
+    type: 'pix_receive'
+  },
+  {
+    id: 'tx-3',
+    title: 'Pagamento de boleto',
+    subtitle: 'Energia Elétrica Comercial Demo',
+    amount: -428.90,
+    date: 'Ontem',
+    category: 'Contas de consumo',
+    type: 'bill_payment'
+  },
+  {
+    id: 'tx-4',
+    title: 'Transferência recebida',
+    subtitle: 'Distribuidora Exemplo de Alimentos ME',
+    amount: 620.00,
+    date: 'Ontem',
+    category: 'Recebimentos',
+    type: 'pix_receive'
+  },
+  {
+    id: 'tx-5',
+    title: 'Transferência enviada',
+    subtitle: 'Manutenção Predial Modelo Ltda',
+    amount: -180.00,
+    date: '04 mar',
+    category: 'Manutenção',
+    type: 'pix_send'
+  },
+  {
+    id: 'tx-6',
+    title: 'Transferência recebida',
+    subtitle: 'Marina Oliveira (Consultoria Fictícia)',
+    amount: 950.00,
+    date: '02 mar',
+    category: 'Consultoria',
+    type: 'pix_receive'
+  },
+  {
+    id: 'tx-7',
+    title: 'Pagamento de fatura',
+    subtitle: 'Internet Corporativa Fibra Demo',
+    amount: -199.90,
+    date: '01 mar',
+    category: 'Telecom',
+    type: 'bill_payment'
+  }
+];
 
 export const DEFAULT_APP_DATA: AppCustomData = {
-  userName: '',
-  userInitials: '',
-  agency: '',
-  accountNumber: '',
-  companyName: '',
-  cnpj: '',
+  userName: 'João Silva (Exemplo)',
+  userInitials: 'JS',
+  agency: '0001',
+  accountNumber: '1234567-8',
+  companyName: 'Empresa Exemplo Soluções Ltda',
+  cnpj: '00.123.456/0001-00',
   accountTitle: 'Conta Nu Empresas',
 
-  // Vazio até o usuário definir uma senha de acesso no primeiro uso do app
+  // Senha de acesso definida inicialmente vazia até ser configurada
   accessPin: '',
 
-  balance: 0,
-  creditCardLimit: 'R$ 0,00',
-  loanLimit: 'R$ 0',
+  balance: 14580.42,
+  creditCardLimit: 'R$ 15.000,00',
+  loanLimit: 'R$ 35.000',
 
   showReminder: true,
   reminderTitle: 'Lembrete: Realize o Pagamento',
@@ -82,26 +146,27 @@ export const DEFAULT_APP_DATA: AppCustomData = {
   bannerTitle: 'Capital de Giro Nu',
   bannerSubtitle: 'Crédito pré-aprovado de até R$ 25.000',
 
-  defaultRecipientName: 'V Mendes Ribeiro Comercio Ltda',
-  defaultRecipientInitials: 'VM',
-  defaultRecipientDoc: '42.189.204/0001-90',
+  defaultRecipientName: 'Papelaria & Suprimentos Modelo Ltda',
+  defaultRecipientInitials: 'PM',
+  defaultRecipientDoc: '00.123.456/0001-00',
   defaultRecipientInstitution: 'Nu Pagamentos S.A.',
   defaultRecipientAccountType: 'Conta Corrente PJ',
-  defaultTransferAmount: 0.00,
+  defaultTransferAmount: 340.50,
 
   loginTitle: 'Queremos deixar seu roxinho ainda mais protegido. Por isso, sempre vamos pedir uma senha para acessar o aplicativo.',
   loginButtonText: 'Criar senha de acesso',
   loginHelperText: 'Essa senha será usada sempre que você abrir o app.',
   skipIntroText: 'Pular esta explicação da próxima vez...',
 
-  // Configuração padrão da Simulação Pix
-  simulatedPixSender: 'MARCOS ANTONIO DE SOUZA',
-  simulatedPixAmount: 350.00,
-  simulatedPixBank: 'Banco Santander (Brasil) S.A.',
-  simulatedPixMessage: 'Pagamento referente aos serviços prestados',
+  // Configuração fictícia da Simulação Pix
+  simulatedPixSender: 'CLIENTE EXEMPLO SERVIÇOS LTDA',
+  simulatedPixAmount: 450.00,
+  simulatedPixBank: 'Nu Pagamentos S.A.',
+  simulatedPixMessage: 'Pagamento de serviços fictícios prestados',
   pixNotificationSound: true,
   pixAutoCreditBalance: true,
 
   contacts: INITIAL_CONTACTS,
   transactions: INITIAL_TRANSACTIONS,
 };
+

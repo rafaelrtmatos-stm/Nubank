@@ -43,3 +43,33 @@ export function playPixNotificationSound() {
     console.warn('AudioContext not allowed without user interaction yet', e);
   }
 }
+
+// Crisp scanner confirmation beep for QR Code read
+export function playQrBeep() {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+
+    const ctx = new AudioContextClass();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1760, now); // A6
+    osc.frequency.setValueAtTime(2349.32, now + 0.05); // D7
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.25, now + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.18);
+  } catch (e) {
+    console.warn('Audio beep error', e);
+  }
+}
+

@@ -14,6 +14,7 @@ import { SelectRecipientScreen } from './screens/SelectRecipientScreen';
 import { TransferScreen } from './screens/TransferScreen';
 import { ConfirmTransferScreen } from './screens/ConfirmTransferScreen';
 import { ReceiptScreen } from './screens/ReceiptScreen';
+import { ScanQrCodeScreen } from './screens/ScanQrCodeScreen';
 import { EditMenuModal } from './components/EditMenuModal';
 import { PixPushNotification } from './components/PixPushNotification';
 import { AppCustomData, Contact, ScreenName, Transaction, TransferData, ActivePixNotification } from './types';
@@ -32,7 +33,30 @@ export default function App() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        return { ...DEFAULT_APP_DATA, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        // Ensure fictional transaction history is populated if saved is empty
+        const transactions = (parsed.transactions && parsed.transactions.length > 0)
+          ? parsed.transactions
+          : DEFAULT_APP_DATA.transactions;
+
+        // Clean out any old non-fictional data to ensure 100% fictional demo data
+        const isOldData = parsed.defaultRecipientDoc === '42.189.204/0001-90';
+        const contacts = (isOldData || !parsed.contacts || parsed.contacts.length === 0)
+          ? DEFAULT_APP_DATA.contacts
+          : parsed.contacts;
+
+        return {
+          ...DEFAULT_APP_DATA,
+          ...parsed,
+          ...(isOldData ? {
+            defaultRecipientName: DEFAULT_APP_DATA.defaultRecipientName,
+            defaultRecipientInitials: DEFAULT_APP_DATA.defaultRecipientInitials,
+            defaultRecipientDoc: DEFAULT_APP_DATA.defaultRecipientDoc,
+            defaultRecipientInstitution: DEFAULT_APP_DATA.defaultRecipientInstitution,
+          } : {}),
+          transactions,
+          contacts,
+        };
       }
     } catch (e) {
       console.error('Error loading saved data', e);
@@ -337,6 +361,7 @@ export default function App() {
               <AreaPixScreen
                 onGoBack={goBack}
                 onNavigateTransfer={handleStartTransfer}
+                onNavigateScanQrCode={() => navigateTo('ScanQrCode')}
                 contacts={appData.contacts}
               />
             </motion.div>
@@ -354,6 +379,7 @@ export default function App() {
               <SelectRecipientScreen
                 onGoBack={goBack}
                 onSelectRecipient={handleSelectRecipient}
+                onNavigateScanQrCode={() => navigateTo('ScanQrCode')}
                 contacts={appData.contacts}
               />
             </motion.div>
@@ -411,6 +437,27 @@ export default function App() {
                   setScreenStack(['Home']);
                   setCurrentScreen('Home');
                 }}
+              />
+            </motion.div>
+          )}
+
+          {currentScreen === 'ScanQrCode' && (
+            <motion.div
+              key="scan_qr_code"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full h-full flex-1"
+            >
+              <ScanQrCodeScreen
+                onGoBack={goBack}
+                onScanSuccess={(scannedTransfer) => {
+                  setActiveTransfer(scannedTransfer);
+                  navigateTo('ConfirmTransfer');
+                  showToast('QR Code identificado com sucesso!');
+                }}
+                appData={appData}
               />
             </motion.div>
           )}

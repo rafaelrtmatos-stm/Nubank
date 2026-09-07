@@ -12,12 +12,14 @@ import { Contact } from '../types';
 interface SelectRecipientScreenProps {
   onGoBack: () => void;
   onSelectRecipient: (contact: Contact) => void;
+  onNavigateScanQrCode?: () => void;
   contacts: Contact[];
 }
 
 export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
   onGoBack,
   onSelectRecipient,
+  onNavigateScanQrCode,
   contacts,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,15 +67,18 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-white select-none text-neutral-900 relative font-sans overflow-hidden">
-      {/* Top Close Button (X) */}
-      <div className="px-5 py-2 flex items-center shrink-0">
+      {/* Top Close Button (X) with Safe Area */}
+      <div 
+        className="px-5 pb-2 flex items-center shrink-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3rem)' }}
+      >
         <button
           id="btn-close-recipient-modal"
           onClick={onGoBack}
-          className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
+          className="w-11 h-11 -ml-2 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
           aria-label="Fechar"
         >
-          <X className="w-6 h-6 stroke-[2]" />
+          <X className="w-7 h-7 stroke-[2.2]" />
         </button>
       </div>
 
@@ -101,7 +106,7 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
               />
               <button
                 type="button"
-                onClick={() => alert("Abrir leitor de QR Code para transferência Pix...")}
+                onClick={onNavigateScanQrCode ? onNavigateScanQrCode : () => {}}
                 className="text-neutral-900 hover:text-[#820AD1] p-1 shrink-0 cursor-pointer transition-colors"
                 title="Escanear QR Code"
               >

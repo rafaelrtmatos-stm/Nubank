@@ -193,15 +193,18 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-white select-none text-neutral-900 font-sans overflow-hidden relative">
-      {/* Top Action Bar */}
-      <div className="pt-2 px-4 pb-2 flex items-center justify-between shrink-0 border-b border-neutral-100 bg-white z-10">
+      {/* Top Action Bar with Safe Area */}
+      <div 
+        className="px-4 pb-3 flex items-center justify-between shrink-0 border-b border-neutral-100 bg-white z-10"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 2.75rem)' }}
+      >
         <button
           id="btn-receipt-back"
           onClick={onGoHome}
-          className="w-10 h-10 -ml-1 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
+          className="w-11 h-11 -ml-1 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
           aria-label="Voltar para o início"
         >
-          <ChevronLeft className="w-6 h-6 stroke-[2]" />
+          <ChevronLeft className="w-6 h-6 stroke-[2.2]" />
         </button>
 
         <span className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">
@@ -212,7 +215,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
           id="btn-share-receipt"
           onClick={handleShare}
           disabled={isGenerating}
-          className="w-10 h-10 -mr-1 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+          className="w-11 h-11 -mr-1 rounded-full flex items-center justify-center text-neutral-800 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
           aria-label="Compartilhar imagem do comprovante"
           title="Compartilhar ou Baixar Imagem"
         >

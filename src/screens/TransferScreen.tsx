@@ -82,15 +82,18 @@ export const TransferScreen: React.FC<TransferScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-white select-none text-neutral-900 relative font-sans overflow-hidden">
-      {/* Top Navigation Bar: Back Arrow */}
-      <div className="px-4 py-2 flex items-center shrink-0">
+      {/* Top Navigation Bar: Back Arrow with Safe Area */}
+      <div 
+        className="px-4 pb-2 flex items-center shrink-0"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3rem)' }}
+      >
         <button
           id="btn-back-transfer"
           onClick={onGoBack}
-          className="w-10 h-10 -ml-1 rounded-full flex items-center justify-center text-neutral-900 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
+          className="w-11 h-11 -ml-1 rounded-full flex items-center justify-center text-neutral-900 hover:bg-neutral-100 active:scale-95 transition-all cursor-pointer"
           aria-label="Voltar"
         >
-          <ChevronLeft className="w-7 h-7 stroke-[2]" />
+          <ChevronLeft className="w-7 h-7 stroke-[2.2]" />
         </button>
       </div>
 

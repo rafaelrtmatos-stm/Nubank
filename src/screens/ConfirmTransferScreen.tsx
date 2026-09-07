@@ -31,12 +31,15 @@ export const ConfirmTransferScreen: React.FC<ConfirmTransferScreenProps> = ({
     <div className="flex flex-col h-full bg-white select-none justify-between overflow-y-auto">
       {/* Header with back button */}
       <div>
-        <div className="p-5 pb-0">
+        <div 
+          className="px-5 pb-1"
+          style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3rem)' }}
+        >
           <button
             id="btn-back-confirm"
             onClick={onGoBack}
             disabled={isPasswordModalOpen}
-            className="w-10 h-10 -ml-2 rounded-full hover:bg-neutral-100 flex items-center justify-center transition-colors cursor-pointer text-neutral-700"
+            className="w-11 h-11 -ml-2 rounded-full hover:bg-neutral-100 active:scale-95 flex items-center justify-center transition-all cursor-pointer text-neutral-800"
             aria-label="Voltar"
           >
             <ChevronLeft className="w-8 h-8" />

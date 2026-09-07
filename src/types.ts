@@ -7,7 +7,8 @@ export type ScreenName =
   | 'SelectRecipient'
   | 'Transfer' 
   | 'ConfirmTransfer' 
-  | 'Receipt';
+  | 'Receipt'
+  | 'ScanQrCode';
 
 export interface Contact {
   id: string;
@@ -28,6 +29,7 @@ export interface Transaction {
   subtitle: string;
   amount: number;
   date: string;
+  category?: string;
   recipient?: Contact;
 }
 

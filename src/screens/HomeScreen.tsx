@@ -90,15 +90,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-white select-none overflow-y-auto pb-16">
-      {/* Header PJ Purple Zone */}
-      <div className="bg-[#5f259f] text-white pt-6 sm:pt-8 pb-6 px-5 transition-all">
+      {/* Header PJ Purple Zone with Safe Area Top */}
+      <div 
+        className="bg-[#5f259f] text-white pb-6 px-5 transition-all"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3.25rem)' }}
+      >
         {/* Top Header Icons */}
         <div className="flex items-center justify-between">
           <div className="relative">
             <button
               id="btn-home-profile"
               onClick={handleLeftMenuClick}
-              className="w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative"
+              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs"
               aria-label="Perfil do usuário ou clique 3x para editar"
               title="Clique 3x para abrir o menu de edição"
             >
@@ -111,11 +114,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <button
               id="btn-toggle-eye"
               onClick={onToggleBalance}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white"
+              className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors cursor-pointer text-white"
               aria-label={isBalanceVisible ? "Ocultar saldo" : "Exibir saldo"}
             >
               {isBalanceVisible ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
@@ -123,7 +126,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <button
               id="btn-home-help"
               onClick={() => alert("Central de Atendimento Nu Empresas: Suporte 24 horas.")}
-              className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-white"
+              className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors cursor-pointer text-white"
               aria-label="Ajuda"
             >
               <HelpCircle className="w-5 h-5" />
@@ -299,6 +302,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <span className="text-xs font-bold text-neutral-800">Área Pix</span>
           </button>
 
+          {/* Ler QR code */}
+          <button
+            id="btn-action-scan-qr"
+            onClick={() => onNavigate('ScanQrCode')}
+            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
+              <QrCode className="w-7 h-7 text-neutral-900" />
+            </div>
+            <span className="text-xs font-bold text-neutral-800">Ler QR code</span>
+          </button>
+
           {/* Transferir */}
           <button
             id="btn-action-transfer"
@@ -434,6 +449,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             );
           })}
+          {appData.transactions.length === 0 && (
+            <div className="py-8 text-center text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 p-4">
+              <p className="text-xs">Nenhuma movimentação recente cadastrada.</p>
+              <button
+                onClick={onOpenEditModal}
+                className="mt-2 text-xs text-[#820AD1] font-semibold underline"
+              >
+                Adicionar transações fictícias
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -458,8 +484,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
               <button
+                id="btn-close-profile-modal"
                 onClick={() => setShowProfileModal(false)}
-                className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 font-bold"
+                className="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 active:scale-95 flex items-center justify-center text-neutral-600 font-bold transition-all cursor-pointer"
+                aria-label="Fechar perfil"
               >
                 ✕
               </button>
@@ -517,10 +545,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
               </div>
               <button
+                id="btn-close-cobrar-modal"
                 onClick={() => setShowCobrarModal(false)}
-                className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:text-neutral-800 transition-colors"
+                className="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 active:scale-95 flex items-center justify-center text-neutral-600 transition-colors cursor-pointer"
+                aria-label="Fechar modal"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 

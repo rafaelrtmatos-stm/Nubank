@@ -64,8 +64,11 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-white justify-between select-none relative overflow-hidden">
-      {/* Top Header Logo */}
-      <div className="px-6 pt-10 pb-4">
+      {/* Top Header Logo with Safe Area */}
+      <div 
+        className="px-6 pb-4"
+        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3.25rem)' }}
+      >
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
