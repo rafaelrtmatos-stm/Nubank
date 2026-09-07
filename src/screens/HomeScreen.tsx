@@ -19,10 +19,13 @@ import {
   Check,
   X,
   Zap,
-  Copy
+  Copy,
+  Edit2
 } from 'lucide-react';
 import { AppCustomData, ScreenName, Transaction } from '../types';
 import { EditableText } from '../components/EditableText';
+import { QuickBalanceModal } from '../components/QuickBalanceModal';
+import { parseCurrency } from '../utils/currencyUtils';
 
 interface HomeScreenProps {
   appData: AppCustomData;
@@ -53,6 +56,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 }) => {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showCobrarModal, setShowCobrarModal] = useState(false);
+  const [showQuickBalanceModal, setShowQuickBalanceModal] = useState(false);
   const [clickCount, setClickCount] = useState(0);
   const clickTimeoutRef = useRef<any>(null);
 
@@ -198,8 +202,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Main Account Balance Section */}
       <div className="px-5 pt-6 pb-2">
         <div className="flex items-center justify-between cursor-pointer group">
-          <div>
-            <div className="flex items-center gap-1">
+          <div className="flex-1">
+            <div 
+              onClick={() => setShowQuickBalanceModal(true)}
+              className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+              title="Clique para editar o saldo da conta"
+            >
               <h2 className="text-base font-bold text-neutral-900">
                 <EditableText
                   value={appData.accountTitle}
@@ -209,23 +217,47 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </h2>
               <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
             </div>
-            <div className="mt-1 flex items-baseline gap-2">
+            <div className="mt-1 flex items-center gap-2">
               {isBalanceVisible ? (
-                <span className="text-2xl sm:text-[28px] font-bold text-neutral-900 tracking-tight">
-                  {isInlineEditMode ? (
-                    <span className="flex items-center gap-1">
-                      <span>R$ </span>
-                      <EditableText
-                        type="number"
-                        value={appData.balance}
-                        onSave={(val) => onUpdateField('balance', parseFloat(val) || 0)}
-                        isInlineEditMode={isInlineEditMode}
-                      />
-                    </span>
-                  ) : (
-                    formattedBalance
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl sm:text-[28px] font-bold text-neutral-900 tracking-tight">
+                    {isInlineEditMode ? (
+                      <span className="flex items-center gap-1">
+                        <span>R$ </span>
+                        <EditableText
+                          type="currency"
+                          value={appData.balance}
+                          onSave={(val) => onUpdateField('balance', parseCurrency(val))}
+                          isInlineEditMode={isInlineEditMode}
+                        />
+                      </span>
+                    ) : (
+                      <span
+                        onClick={() => setShowQuickBalanceModal(true)}
+                        className="cursor-pointer hover:text-[#820AD1] transition-colors"
+                        title="Toque para editar o saldo"
+                      >
+                        {formattedBalance}
+                      </span>
+                    )}
+                  </span>
+                  
+                  {/* Quick Edit Balance Button */}
+                  {!isInlineEditMode && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowQuickBalanceModal(true);
+                      }}
+                      className="p-1 rounded-full text-neutral-400 hover:text-[#820AD1] hover:bg-purple-50 transition-colors cursor-pointer"
+                      title="Editar saldo da conta"
+                      aria-label="Editar saldo"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
                   )}
-                </span>
+                </div>
               ) : (
                 <div className="h-8 flex items-center gap-1.5 py-1">
                   <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
@@ -578,6 +610,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           </motion.div>
         </div>
       )}
+
+      {/* Modal de Edição Rápida de Saldo */}
+      <QuickBalanceModal
+        isOpen={showQuickBalanceModal}
+        onClose={() => setShowQuickBalanceModal(false)}
+        currentBalance={appData.balance}
+        onSaveBalance={(newBalance) => onUpdateField('balance', newBalance)}
+      />
     </div>
   );
 };

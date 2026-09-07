@@ -39,13 +39,15 @@ export const EditableText: React.FC<EditableTextProps> = ({
   if (isEditing) {
     return (
       <input
-        type={type === 'number' ? 'number' : 'text'}
+        type="text"
+        inputMode={type === 'number' || type === 'currency' ? 'decimal' : 'text'}
         value={tempValue}
         autoFocus
+        onFocus={(e) => e.target.select()}
         onChange={(e) => setTempValue(e.target.value)}
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
-        className={`bg-white text-neutral-900 border border-[#820AD1] rounded px-1.5 py-0.5 outline-none shadow-sm ${className}`}
+        className={`bg-white text-neutral-900 border-2 border-[#820AD1] rounded-lg px-2 py-0.5 outline-none shadow-md min-w-[80px] ${className}`}
       />
     );
   }
