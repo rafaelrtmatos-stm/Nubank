@@ -67,10 +67,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
         >
           <button
             onClick={handleLogoClick}
-            className="text-4xl font-extrabold tracking-tighter text-[#820AD1] font-sans hover:opacity-80 active:scale-95 transition-all cursor-pointer relative"
+            className="hover:opacity-80 active:scale-95 transition-all cursor-pointer relative"
             title="Clique 3x no logo para abrir o editor"
           >
-            nu
+            <img src="/nu-logo.png" alt="Nubank" className="w-10 h-10 rounded-xl" />
             {clickCount > 0 && (
               <span className="absolute -top-1 -right-3 bg-amber-400 text-neutral-900 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
                 {clickCount}

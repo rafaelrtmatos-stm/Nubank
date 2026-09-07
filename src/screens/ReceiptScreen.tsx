@@ -231,9 +231,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
             {/* Header with Nu Logo + Verified Badge */}
             <div className="flex items-center gap-1.5 mb-6">
               <div className="flex items-center">
-                <span className="font-extrabold text-2xl sm:text-[26px] tracking-tight text-neutral-900 leading-none lowercase">
-                  nu
-                </span>
+                <img src="/nu-logo.png" alt="Nubank" className="w-7 h-7 rounded-md" />
               </div>
               <div className="w-4 h-4 rounded-full bg-neutral-700 text-white flex items-center justify-center -mt-1 ml-0.5">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
