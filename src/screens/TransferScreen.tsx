@@ -4,8 +4,6 @@ import {
   ChevronLeft, 
   Eye, 
   EyeOff, 
-  Wifi, 
-  Battery, 
   Moon,
   Delete,
   Check
@@ -84,46 +82,6 @@ export const TransferScreen: React.FC<TransferScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-white select-none text-neutral-900 relative font-sans overflow-hidden">
-      {/* Top iOS Status Bar */}
-      <div className="pt-3 px-6 flex items-center justify-between text-xs font-semibold text-neutral-900 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[13px] font-bold tracking-tight">09:23</span>
-          {/* Bed icon for Sleep / Focus mode */}
-          <div className="w-3.5 h-3.5 flex items-center justify-center text-neutral-800">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-              <path d="M20 9.557V3h-2v2H6V3H4v6.557C2.81 10.237 2 11.523 2 13v6h2v2h2v-2h12v2h2v-2h2v-6c0-1.477-.81-2.763-2-3.443zM6 7h12v2.12c-.59.19-1.12.51-1.56.93L12 14.5l-4.44-4.45C7.12 9.63 6.59 9.31 6 9.12V7z"/>
-            </svg>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {/* Cellular Signal Bars (4 bars) */}
-          <div className="flex items-end gap-[1.5px] h-3">
-            <div className="w-[3px] h-[3px] bg-neutral-900 rounded-[0.5px]" />
-            <div className="w-[3px] h-[5px] bg-neutral-900 rounded-[0.5px]" />
-            <div className="w-[3px] h-[8px] bg-neutral-900 rounded-[0.5px]" />
-            <div className="w-[3px] h-[11px] bg-neutral-900 rounded-[0.5px]" />
-          </div>
-
-          {/* Wifi */}
-          <Wifi className="w-3.5 h-3.5 text-neutral-900 stroke-[2.5]" />
-
-          {/* Battery pill with 53 inside */}
-          <div className="flex items-center">
-            <div className="w-6 h-3 rounded-[4px] border-[1.2px] border-neutral-900 p-[1px] flex items-center justify-center relative">
-              <div 
-                className="h-full bg-[#f5a623] rounded-[2px] absolute left-[1px] top-[1px] bottom-[1px]" 
-                style={{ width: '53%' }} 
-              />
-              <span className="text-[8.5px] font-black text-neutral-900 relative z-10 leading-none">
-                53
-              </span>
-            </div>
-            <div className="w-[1.5px] h-1.5 bg-neutral-900 rounded-r-[1px]" />
-          </div>
-        </div>
-      </div>
-
       {/* Top Navigation Bar: Back Arrow */}
       <div className="px-4 py-2 flex items-center shrink-0">
         <button

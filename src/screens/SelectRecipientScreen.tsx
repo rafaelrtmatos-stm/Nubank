@@ -4,7 +4,6 @@ import {
   X, 
   QrCode, 
   Building2, 
-  Wifi,
   Search,
   ArrowRight
 } from 'lucide-react';
@@ -66,46 +65,6 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-white select-none text-neutral-900 relative font-sans overflow-hidden">
-      {/* Top iOS Status Bar */}
-      <div className="pt-3 px-6 flex items-center justify-between text-xs font-semibold text-neutral-900 shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[13px] font-bold tracking-tight">09:35</span>
-          {/* Navigation arrow icon */}
-          <div className="w-3.5 h-3.5 flex items-center justify-center text-neutral-800">
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
-              <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-            </svg>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-1.5">
-          {/* Cellular Signal Bars (4 bars) */}
-          <div className="flex items-end gap-[1.5px] h-3">
-            <div className="w-[3px] h-[3px] bg-neutral-900 rounded-[0.5px]" />
-            <div className="w-[3px] h-[5px] bg-neutral-900 rounded-[0.5px]" />
-            <div className="w-[3px] h-[8px] bg-neutral-900 rounded-[0.5px]" />
-            <div className="w-[3px] h-[11px] bg-neutral-900 rounded-[0.5px]" />
-          </div>
-
-          {/* Wifi */}
-          <Wifi className="w-3.5 h-3.5 text-neutral-900 stroke-[2.5]" />
-
-          {/* Battery pill with 49 inside */}
-          <div className="flex items-center">
-            <div className="w-6 h-3 rounded-[4px] border-[1.2px] border-neutral-900 p-[1px] flex items-center justify-center relative">
-              <div 
-                className="h-full bg-[#f5a623] rounded-[2px] absolute left-[1px] top-[1px] bottom-[1px]" 
-                style={{ width: '49%' }} 
-              />
-              <span className="text-[8.5px] font-black text-neutral-900 relative z-10 leading-none">
-                49
-              </span>
-            </div>
-            <div className="w-[1.5px] h-1.5 bg-neutral-900 rounded-r-[1px]" />
-          </div>
-        </div>
-      </div>
-
       {/* Top Close Button (X) */}
       <div className="px-5 py-2 flex items-center shrink-0">
         <button
