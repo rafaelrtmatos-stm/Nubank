@@ -58,19 +58,25 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
     currency: 'BRL',
   });
 
+  const isBillPayment = transferData?.isBillPayment || false;
+
   // Payer (Origem) info from appData registered in system
-  const payerName = appData.companyName || appData.userName || 'RAFAEL TAVARES MATOS 02580326260';
+  const payerName = isBillPayment
+    ? (appData.userName || 'RAFAEL TAVARES MATOS')
+    : (appData.companyName || appData.userName || 'RAFAEL TAVARES MATOS 02580326260');
   const payerInstitution = 'NU PAGAMENTOS - IP';
   const payerAgency = appData.agency || '0001';
   const payerAccount = appData.accountNumber || '79827260-9';
   const payerCnpj = appData.cnpj?.replace(/\D/g, '') || '28884125000140';
+  const payerCpfMasked = '...803.262-..';
 
-  // Recipient (Destino) info from recipient searched/selected
-  const destName = recipient.name || 'José Miguel Ospino Pinto';
-  const destInstitution = recipient.institution || 'NU PAGAMENTOS - IP';
+  // Recipient (Destino / Beneficiário) info from recipient searched/selected
+  const destName = recipient.name || (isBillPayment ? 'EQUATORIAL PARA DISTRIBUIDORA DE ENERGIA S.A.' : 'José Miguel Ospino Pinto');
+  const destInstitution = recipient.institution || (isBillPayment ? 'BCO DO BRASIL S.A.' : 'NU PAGAMENTOS - IP');
   const destAgency = recipient.agency || '0001';
   const destAccount = recipient.account || '279399852-7';
-  const destAccountType = recipient.accountType || 'Conta de pagamentos';
+  const destAccountType = recipient.accountType || (isBillPayment ? 'Conta corrente' : 'Conta de pagamentos');
+  const destDocument = recipient.document || '04895728000180';
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -240,39 +246,74 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
 
             {/* Title and Date */}
             <h1 className="text-[21px] sm:text-[23px] font-bold text-neutral-900 tracking-tight leading-tight">
-              Comprovante de transferência
+              {isBillPayment ? 'Comprovante de pagamento' : 'Comprovante de transferência'}
             </h1>
             <p className="text-[13px] text-neutral-500 font-medium mt-1 mb-8">
-              {formattedDateTime}
+              {transferData?.receiptDateFormatted || formattedDateTime}
             </p>
 
-            {/* Transfer Summary Section (Valor, Tipo, ID) */}
-            <div className="space-y-4 text-[14px]">
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-900 font-normal">Valor</span>
-                <span className="text-neutral-900 font-normal text-right">{formattedAmount}</span>
-              </div>
+            {/* Summary Section */}
+            {isBillPayment ? (
+              <div className="space-y-4 text-[14px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-900 font-normal">Valor</span>
+                  <span className="text-neutral-900 font-normal text-right">{formattedAmount}</span>
+                </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-neutral-900 font-normal">Tipo de transferência</span>
-                <span className="text-neutral-900 font-normal text-right">Pix</span>
-              </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-900 font-normal">Tipo de pagamento</span>
+                  <span className="text-neutral-900 font-normal text-right">Boleto</span>
+                </div>
 
-              <div className="flex justify-between items-start pt-1">
-                <span className="text-neutral-900 font-normal shrink-0">ID da transação</span>
-                <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] break-all leading-relaxed font-mono">
-                  {transactionId}
-                </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-900 font-normal">Vencimento</span>
+                  <span className="text-neutral-900 font-normal text-right">
+                    {transferData?.dueDate || '20.07.2026'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-start pt-1">
+                  <span className="text-neutral-900 font-normal shrink-0">Código identificador</span>
+                  <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] break-all leading-relaxed font-mono">
+                    {transferData?.identifierCode || 'BOLETO33733841850847025'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-start pt-1">
+                  <span className="text-neutral-900 font-normal shrink-0">Descrição original</span>
+                  <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] leading-relaxed">
+                    {transferData?.originalDescription || `Venc: ${transferData?.dueDate || '20.07.2026'} - ${formattedAmount}`}
+                  </span>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4 text-[14px]">
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-900 font-normal">Valor</span>
+                  <span className="text-neutral-900 font-normal text-right">{formattedAmount}</span>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-neutral-900 font-normal">Tipo de transferência</span>
+                  <span className="text-neutral-900 font-normal text-right">Pix</span>
+                </div>
+
+                <div className="flex justify-between items-start pt-1">
+                  <span className="text-neutral-900 font-normal shrink-0">ID da transação</span>
+                  <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] break-all leading-relaxed font-mono">
+                    {transactionId}
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Divider */}
             <div className="h-px bg-neutral-100 my-7" />
 
-            {/* Section: Destino */}
+            {/* Section: Destino / Beneficiário */}
             <div className="space-y-4">
               <h2 className="text-[13px] font-medium text-neutral-600">
-                Destino
+                {isBillPayment ? 'Beneficiário' : 'Destino'}
               </h2>
 
               <div className="space-y-4 text-[14px]">
@@ -283,33 +324,53 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">Instituição</span>
-                  <span className="text-neutral-900 font-normal text-right uppercase">
-                    {destInstitution}
-                  </span>
-                </div>
+                {isBillPayment ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-900 font-normal">CNPJ</span>
+                      <span className="text-neutral-900 font-normal text-right font-mono text-xs">
+                        {destDocument}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">Agência</span>
-                  <span className="text-neutral-900 font-normal text-right">
-                    {destAgency}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-900 font-normal">Instituição</span>
+                      <span className="text-neutral-900 font-normal text-right uppercase">
+                        {destInstitution}
+                      </span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-900 font-normal">Instituição</span>
+                      <span className="text-neutral-900 font-normal text-right uppercase">
+                        {destInstitution}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">Conta</span>
-                  <span className="text-neutral-900 font-normal text-right">
-                    {destAccount}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-900 font-normal">Agência</span>
+                      <span className="text-neutral-900 font-normal text-right">
+                        {destAgency}
+                      </span>
+                    </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">Tipo de conta</span>
-                  <span className="text-neutral-900 font-normal text-right">
-                    {destAccountType}
-                  </span>
-                </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-900 font-normal">Conta</span>
+                      <span className="text-neutral-900 font-normal text-right">
+                        {destAccount}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-center">
+                      <span className="text-neutral-900 font-normal">Tipo de conta</span>
+                      <span className="text-neutral-900 font-normal text-right">
+                        {destAccountType}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -329,6 +390,15 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                     {payerName}
                   </span>
                 </div>
+
+                {isBillPayment ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-900 font-normal">CPF</span>
+                    <span className="text-neutral-900 font-normal text-right">
+                      {payerCpfMasked}
+                    </span>
+                  </div>
+                ) : null}
 
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-900 font-normal">Instituição</span>
@@ -351,12 +421,14 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">CNPJ</span>
-                  <span className="text-neutral-900 font-normal text-right">
-                    {payerCnpj}
-                  </span>
-                </div>
+                {!isBillPayment ? (
+                  <div className="flex justify-between items-center">
+                    <span className="text-neutral-900 font-normal">CNPJ</span>
+                    <span className="text-neutral-900 font-normal text-right">
+                      {payerCnpj}
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
           </motion.div>

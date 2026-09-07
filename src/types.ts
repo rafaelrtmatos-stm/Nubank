@@ -35,6 +35,12 @@ export interface TransferData {
   amount: number;
   message?: string;
   date: string;
+  isBillPayment?: boolean;
+  dueDate?: string;
+  identifierCode?: string;
+  originalDescription?: string;
+  transactionId?: string;
+  receiptDateFormatted?: string;
 }
 
 export interface AppCustomData {

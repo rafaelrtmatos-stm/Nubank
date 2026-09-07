@@ -308,7 +308,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      <div className="h-1.5 bg-[#f0f1f5] my-3" />
+      <div className="h-1.5 bg-[#f0f1f5] my-2" />
 
       {/* Meus Cartões Section */}
       <div className="px-5 py-2">

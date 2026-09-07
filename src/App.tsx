@@ -298,6 +298,10 @@ export default function App() {
               <PaymentOptionsScreen
                 onGoBack={goBack}
                 onNavigate={(screen) => navigateTo(screen)}
+                onGenerateReceiptFromPdf={(transferData) => {
+                  setActiveTransfer(transferData);
+                  navigateTo('Receipt');
+                }}
               />
             </motion.div>
           )}
