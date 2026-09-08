@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ShieldCheck, Fingerprint, Sliders } from 'lucide-react';
+import { ShieldCheck, Fingerprint } from 'lucide-react';
 import { AppCustomData } from '../types';
 import { EditableText } from '../components/EditableText';
 import { PasswordModal } from '../components/PasswordModal';
@@ -10,7 +10,6 @@ interface LoginScreenProps {
   onNavigate: (screen: 'Home') => void;
   skipIntro: boolean;
   onToggleSkipIntro: (val: boolean) => void;
-  onOpenEditModal: () => void;
   onUpdateField: <K extends keyof AppCustomData>(key: K, value: AppCustomData[K]) => void;
   isInlineEditMode: boolean;
 }
@@ -20,34 +19,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onNavigate,
   skipIntro,
   onToggleSkipIntro,
-  onOpenEditModal,
   onUpdateField,
   isInlineEditMode,
 }) => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
-  const clickTimeoutRef = useRef<any>(null);
 
   const isFirstAccess = !appData.accessPin;
-
-  const handleLogoClick = () => {
-    const newCount = clickCount + 1;
-    setClickCount(newCount);
-
-    if (clickTimeoutRef.current) {
-      clearTimeout(clickTimeoutRef.current);
-    }
-
-    if (newCount >= 3) {
-      setClickCount(0);
-      onOpenEditModal();
-      return;
-    }
-
-    clickTimeoutRef.current = setTimeout(() => {
-      setClickCount(0);
-    }, 450);
-  };
 
   const handleAuthenticate = () => {
     setIsPasswordModalOpen(true);
@@ -74,30 +51,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-between"
         >
-          <button
-            onClick={handleLogoClick}
-            className="hover:opacity-80 active:scale-95 transition-all cursor-pointer relative"
-            title="Clique 3x no logo para abrir o editor"
-          >
+          <div className="flex items-center">
             <img src="/nu-logo.png" alt="Nubank" className="w-10 h-10 rounded-xl" />
-            {clickCount > 0 && (
-              <span className="absolute -top-1 -right-3 bg-amber-400 text-neutral-900 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
-                {clickCount}
-              </span>
-            )}
-          </button>
+          </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
             <span className="text-xs font-semibold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200">
               PJ Empresas
             </span>
-            <button
-              onClick={onOpenEditModal}
-              className="p-1.5 rounded-full bg-neutral-100 hover:bg-neutral-200 text-neutral-600 transition-colors"
-              title="Abrir configurações de edição"
-            >
-              <Sliders className="w-4 h-4" />
-            </button>
           </div>
         </motion.div>
       </div>

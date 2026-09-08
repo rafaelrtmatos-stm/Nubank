@@ -300,7 +300,6 @@ export default function App() {
                 onNavigate={() => navigateTo('Home')}
                 skipIntro={skipIntro}
                 onToggleSkipIntro={setSkipIntro}
-                onOpenEditModal={() => setIsEditModalOpen(true)}
                 onUpdateField={handleUpdateField}
                 isInlineEditMode={isInlineEditMode}
               />
