@@ -28,38 +28,21 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('Splash');
   const [screenStack, setScreenStack] = useState<ScreenName[]>(['Splash']);
   
-  // App Custom Data (Persistent in localStorage)
+  // App Custom Data (Persistent in localStorage only)
   const [appData, setAppData] = useState<AppCustomData>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure fictional transaction history is populated if saved is empty
-        const transactions = (parsed.transactions && parsed.transactions.length > 0)
-          ? parsed.transactions
-          : DEFAULT_APP_DATA.transactions;
-
-        // Clean out any old non-fictional data to ensure 100% fictional demo data
-        const isOldData = parsed.defaultRecipientDoc === '42.189.204/0001-90';
-        const contacts = (isOldData || !parsed.contacts || parsed.contacts.length === 0)
-          ? DEFAULT_APP_DATA.contacts
-          : parsed.contacts;
-
         return {
           ...DEFAULT_APP_DATA,
           ...parsed,
-          ...(isOldData ? {
-            defaultRecipientName: DEFAULT_APP_DATA.defaultRecipientName,
-            defaultRecipientInitials: DEFAULT_APP_DATA.defaultRecipientInitials,
-            defaultRecipientDoc: DEFAULT_APP_DATA.defaultRecipientDoc,
-            defaultRecipientInstitution: DEFAULT_APP_DATA.defaultRecipientInstitution,
-          } : {}),
-          transactions,
-          contacts,
+          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
+          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
         };
       }
     } catch (e) {
-      console.error('Error loading saved data', e);
+      console.error('Error loading saved data from localStorage', e);
     }
     return DEFAULT_APP_DATA;
   });
@@ -67,6 +50,7 @@ export default function App() {
   const [isBalanceVisible, setIsBalanceVisible] = useState<boolean>(true);
   const [skipIntro, setSkipIntro] = useState<boolean>(false);
   const [preselectedContact, setPreselectedContact] = useState<Contact | null>(null);
+  const [transferInitialAmount, setTransferInitialAmount] = useState<number | undefined>(undefined);
   
   // Edit mode states
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -122,7 +106,7 @@ export default function App() {
     setIsBalanceVisible(true);
     setSkipIntro(false);
     localStorage.removeItem(STORAGE_KEY);
-    showToast('Dados restaurados para o padrão original.');
+    showToast('Dados zerados com sucesso. O aplicativo está no estado virgem!');
   };
 
   // Trigger Pix Receive Simulation
@@ -133,9 +117,9 @@ export default function App() {
     message?: string,
     delaySeconds: number = 0
   ) => {
-    const finalSender = senderName || appData.simulatedPixSender || 'CLIENTE EMPRESARIAL LTDA';
+    const finalSender = senderName || appData.simulatedPixSender || 'CLIENTE REMETENTE';
     const finalAmount = amount !== undefined ? amount : appData.simulatedPixAmount;
-    const finalBank = bank || appData.simulatedPixBank || 'Banco do Brasil S.A.';
+    const finalBank = bank || appData.simulatedPixBank || 'Nu Pagamentos S.A.';
     const finalMsg = message !== undefined ? message : appData.simulatedPixMessage;
 
     if (delaySeconds > 0) {
@@ -216,18 +200,43 @@ export default function App() {
     }
   };
 
-  const handleStartTransfer = (contact?: Contact) => {
+  const handleAddContact = (newContact: Contact) => {
+    setAppData((prev) => {
+      const existingIndex = prev.contacts.findIndex(
+        (c) =>
+          (c.document && c.document !== '***.***.***-**' && c.document === newContact.document) ||
+          (c.name.trim().toLowerCase() === newContact.name.trim().toLowerCase())
+      );
+
+      let updatedContacts = [...prev.contacts];
+      if (existingIndex >= 0) {
+        updatedContacts[existingIndex] = { ...updatedContacts[existingIndex], ...newContact };
+      } else {
+        updatedContacts = [newContact, ...updatedContacts];
+      }
+
+      return {
+        ...prev,
+        contacts: updatedContacts,
+      };
+    });
+  };
+
+  const handleStartTransfer = (contact?: Contact, amount?: number) => {
     if (contact) {
       setPreselectedContact(contact);
+      setTransferInitialAmount(amount);
       navigateTo('Transfer');
     } else {
       setPreselectedContact(null);
+      setTransferInitialAmount(undefined);
       navigateTo('SelectRecipient');
     }
   };
 
-  const handleSelectRecipient = (contact: Contact) => {
+  const handleSelectRecipient = (contact: Contact, amount?: number) => {
     setPreselectedContact(contact);
+    setTransferInitialAmount(amount);
     navigateTo('Transfer');
   };
 
@@ -379,6 +388,7 @@ export default function App() {
                 onGoBack={goBack}
                 onSelectRecipient={handleSelectRecipient}
                 onNavigateScanQrCode={() => navigateTo('ScanQrCode')}
+                onAddContact={handleAddContact}
                 contacts={appData.contacts}
               />
             </motion.div>
@@ -398,6 +408,7 @@ export default function App() {
                 onContinue={handleContinueTransfer}
                 contacts={appData.contacts}
                 preselectedContact={preselectedContact}
+                initialAmount={transferInitialAmount}
                 accountBalance={appData.balance}
               />
             </motion.div>
@@ -456,6 +467,8 @@ export default function App() {
                   navigateTo('ConfirmTransfer');
                   showToast('QR Code identificado com sucesso!');
                 }}
+                onAddContact={handleAddContact}
+                onSelectRecipient={handleSelectRecipient}
                 appData={appData}
               />
             </motion.div>

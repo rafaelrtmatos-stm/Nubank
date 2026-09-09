@@ -152,6 +152,27 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
     setFormData((prev) => ({ ...prev, transactions: updated }));
   };
 
+  // Contact editing helpers
+  const handleAddContact = () => {
+    const newContact: Contact = {
+      id: 'contact-' + Date.now(),
+      name: '',
+      initials: '',
+      document: '',
+      institution: 'Nu Pagamentos S.A.',
+      accountType: 'Conta Corrente PJ',
+      agency: '0001',
+      account: '',
+      pixKey: ''
+    };
+    setFormData((prev) => ({ ...prev, contacts: [newContact, ...prev.contacts] }));
+  };
+
+  const handleDeleteContact = (index: number) => {
+    const updated = formData.contacts.filter((_, i) => i !== index);
+    setFormData((prev) => ({ ...prev, contacts: updated }));
+  };
+
   return (
     <div 
       className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-5 overflow-y-auto"
@@ -824,6 +845,12 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                     </div>
                   </div>
                 ))}
+                {formData.transactions.length === 0 && (
+                  <div className="py-8 text-center text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 p-4">
+                    <p className="text-xs">Nenhuma transação no histórico.</p>
+                    <p className="text-[11px] text-neutral-400 mt-1">Clique em "+ Adicionar" acima para cadastrar transações.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -895,11 +922,21 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
           {/* TAB: CONTATOS */}
           {activeTab === 'contacts' && (
             <div className="space-y-3">
-              <p className="font-bold text-neutral-800">Contatos Frequentes da Área Pix</p>
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-neutral-800">Contatos Frequentes da Área Pix</p>
+                <button
+                  type="button"
+                  onClick={handleAddContact}
+                  className="flex items-center gap-1 text-xs font-bold text-[#820AD1] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" /> Adicionar
+                </button>
+              </div>
+
               <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">
                 {formData.contacts.map((contact, idx) => (
                   <div key={contact.id || idx} className="p-3 bg-neutral-50 rounded-xl border border-neutral-200 space-y-2">
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="flex items-center justify-between gap-2">
                       <input
                         type="text"
                         value={contact.name}
@@ -908,8 +945,8 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                           updated[idx] = { ...updated[idx], name: e.target.value };
                           handleChange('contacts', updated);
                         }}
-                        placeholder="Nome"
-                        className="col-span-2 font-bold text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1"
+                        placeholder="Nome do contato"
+                        className="flex-1 font-bold text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1 focus:outline-none focus:border-[#820AD1]"
                       />
                       <input
                         type="text"
@@ -920,8 +957,16 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                           handleChange('contacts', updated);
                         }}
                         placeholder="Iniciais"
-                        className="font-bold text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1 text-center"
+                        className="w-16 font-bold text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1 text-center focus:outline-none focus:border-[#820AD1]"
                       />
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteContact(idx)}
+                        className="text-red-500 hover:text-red-700 p-1 cursor-pointer shrink-0"
+                        title="Excluir contato"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <input
@@ -932,8 +977,8 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                           updated[idx] = { ...updated[idx], document: e.target.value };
                           handleChange('contacts', updated);
                         }}
-                        placeholder="Documento"
-                        className="text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1"
+                        placeholder="CPF ou CNPJ"
+                        className="text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1 focus:outline-none"
                       />
                       <input
                         type="text"
@@ -943,12 +988,19 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                           updated[idx] = { ...updated[idx], institution: e.target.value };
                           handleChange('contacts', updated);
                         }}
-                        placeholder="Banco"
-                        className="text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1"
+                        placeholder="Instituição / Banco"
+                        className="text-xs bg-white border border-neutral-300 rounded-lg px-2 py-1 focus:outline-none"
                       />
                     </div>
                   </div>
                 ))}
+
+                {formData.contacts.length === 0 && (
+                  <div className="py-8 text-center text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 p-4">
+                    <p className="text-xs">Nenhum contato cadastrado na agenda Pix.</p>
+                    <p className="text-[11px] text-neutral-400 mt-1">Clique no botão "+ Adicionar" acima para incluir contatos.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}

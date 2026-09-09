@@ -51,18 +51,18 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
       setIsConfirmationModalOpen(true);
     } catch (err) {
       console.warn('Fallback parsing error:', err);
-      // Fallback robusto com os dados da fatura lida
+      // Fallback com dados genéricos caso não seja possível ler o PDF
       const fallbackData: ExtractedBillData = {
-        beneficiaryName: 'EQUATORIAL PARÁ DISTRIBUIDORA DE ENERGIA S.A.',
-        beneficiaryCnpj: '04895728000180',
-        beneficiaryBank: 'BCO DO BRASIL S.A.',
+        beneficiaryName: 'Beneficiário do Boleto',
+        beneficiaryCnpj: '00.000.000/0001-00',
+        beneficiaryBank: 'Banco Emissor',
         beneficiaryAccountType: 'Conta corrente',
-        amount: 879.74,
-        dueDate: '20.07.2026',
-        nossoNumero: '33733842660612719',
-        barcodeNumber: '00190.00009 03373.384266 60612.719173 1 00000000087974',
-        payerName: 'DANIEL SOUZA DE ANDRADE',
-        payerCpf: '950.246.202-59',
+        amount: 0,
+        dueDate: new Date().toLocaleDateString('pt-BR'),
+        nossoNumero: '',
+        barcodeNumber: '',
+        payerName: '',
+        payerCpf: '',
       };
       setUploadedBillData(fallbackData);
       setIsConfirmationModalOpen(true);

@@ -34,33 +34,33 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
 }) => {
   // Editable form state initialized from extracted PDF
   const [amount, setAmount] = useState<string>(() =>
-    extractedData?.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '879,74'
+    extractedData?.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '0,00'
   );
-  const [dueDate, setDueDate] = useState<string>(() => extractedData?.dueDate || '20.07.2026');
+  const [dueDate, setDueDate] = useState<string>(() => extractedData?.dueDate || new Date().toLocaleDateString('pt-BR'));
   const [barcodeNumber, setBarcodeNumber] = useState<string>(
-    () => extractedData?.barcodeNumber || '00190.00009 03373.384266 60612.719173 1 00000000087974'
+    () => extractedData?.barcodeNumber || ''
   );
   const [nossoNumero, setNossoNumero] = useState<string>(
-    () => extractedData?.nossoNumero || '33733842660612719'
+    () => extractedData?.nossoNumero || ''
   );
   const [beneficiaryName, setBeneficiaryName] = useState<string>(
-    () => extractedData?.beneficiaryName || 'EQUATORIAL PARÁ DISTRIBUIDORA DE ENERGIA S.A.'
+    () => extractedData?.beneficiaryName || 'Beneficiário do Boleto'
   );
   const [beneficiaryCnpj, setBeneficiaryCnpj] = useState<string>(
-    () => extractedData?.beneficiaryCnpj || '04895728000180'
+    () => extractedData?.beneficiaryCnpj || '00.000.000/0001-00'
   );
 
   // Whenever extractedData changes or modal opens, update the form fields with newly extracted data
   React.useEffect(() => {
     if (extractedData) {
       setAmount(
-        extractedData.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '879,74'
+        extractedData.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '0,00'
       );
-      setDueDate(extractedData.dueDate || '20.07.2026');
-      setBarcodeNumber(extractedData.barcodeNumber || '00190.00009 03373.384266 60612.719173 1 00000000087974');
-      setNossoNumero(extractedData.nossoNumero || '33733842660612719');
-      setBeneficiaryName(extractedData.beneficiaryName || 'EQUATORIAL PARÁ DISTRIBUIDORA DE ENERGIA S.A.');
-      setBeneficiaryCnpj(extractedData.beneficiaryCnpj || '04895728000180');
+      setDueDate(extractedData.dueDate || new Date().toLocaleDateString('pt-BR'));
+      setBarcodeNumber(extractedData.barcodeNumber || '');
+      setNossoNumero(extractedData.nossoNumero || '');
+      setBeneficiaryName(extractedData.beneficiaryName || 'Beneficiário do Boleto');
+      setBeneficiaryCnpj(extractedData.beneficiaryCnpj || '00.000.000/0001-00');
     }
   }, [extractedData, isOpen]);
 

@@ -15,6 +15,7 @@ interface TransferScreenProps {
   onContinue: (data: TransferData) => void;
   contacts: Contact[];
   preselectedContact?: Contact | null;
+  initialAmount?: number;
   accountBalance: number;
 }
 
@@ -23,23 +24,29 @@ export const TransferScreen: React.FC<TransferScreenProps> = ({
   onContinue,
   contacts,
   preselectedContact,
+  initialAmount,
   accountBalance,
 }) => {
   const [recipient, setRecipient] = useState<Contact>(() => {
     if (preselectedContact) return preselectedContact;
     if (contacts && contacts.length > 0) return contacts[0];
     return {
-      id: 'default-vm',
-      name: 'V Mendes Ribeiro Comercio Ltda',
-      initials: 'VM',
-      document: '42.189.204/0001-90',
+      id: 'default-recipient',
+      name: 'Destinatário Pix',
+      initials: 'DP',
+      document: '00.000.000/0001-00',
       institution: 'Nu Pagamentos S.A.',
       accountType: 'Conta Corrente PJ',
-      pixKey: 'financeiro@vmendes.com.br'
+      pixKey: ''
     };
   });
 
-  const [rawDigits, setRawDigits] = useState<string>('0');
+  const [rawDigits, setRawDigits] = useState<string>(() => {
+    if (initialAmount && initialAmount > 0) {
+      return Math.round(initialAmount * 100).toString();
+    }
+    return '0';
+  });
   const [isBalanceHidden, setIsBalanceHidden] = useState<boolean>(false);
   const [showRecipientPicker, setShowRecipientPicker] = useState<boolean>(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +56,12 @@ export const TransferScreen: React.FC<TransferScreenProps> = ({
       setRecipient(preselectedContact);
     }
   }, [preselectedContact]);
+
+  useEffect(() => {
+    if (initialAmount && initialAmount > 0) {
+      setRawDigits(Math.round(initialAmount * 100).toString());
+    }
+  }, [initialAmount]);
 
   // Convert rawDigits to numeric float
   const numericAmount = parseInt(rawDigits || '0', 10) / 100;

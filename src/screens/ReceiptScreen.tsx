@@ -68,15 +68,15 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
   const payerAgency = appData.agency || '0001';
   const payerAccount = appData.accountNumber || '00000000-0';
   const payerCnpj = appData.cnpj?.replace(/\D/g, '') || '';
-  const payerCpfMasked = '...000.000-..';
+  const payerCpfMasked = appData.cnpj ? appData.cnpj : '***.000.000-**';
 
   // Recipient (Destino / Beneficiário) info from recipient searched/selected
-  const destName = recipient.name || (isBillPayment ? 'EQUATORIAL PARA DISTRIBUIDORA DE ENERGIA S.A.' : 'José Miguel Ospino Pinto');
-  const destInstitution = recipient.institution || (isBillPayment ? 'BCO DO BRASIL S.A.' : 'NU PAGAMENTOS - IP');
+  const destName = recipient.name || (isBillPayment ? 'Concessionária de Energia S.A.' : 'Destinatário Pix');
+  const destInstitution = recipient.institution || 'NU PAGAMENTOS - IP';
   const destAgency = recipient.agency || '0001';
-  const destAccount = recipient.account || '279399852-7';
+  const destAccount = recipient.account || '00000000-0';
   const destAccountType = recipient.accountType || (isBillPayment ? 'Conta corrente' : 'Conta de pagamentos');
-  const destDocument = recipient.document || '04895728000180';
+  const destDocument = recipient.document || '00.000.000/0001-00';
 
   const showToast = (msg: string) => {
     setToastMessage(msg);

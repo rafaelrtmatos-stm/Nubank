@@ -64,7 +64,7 @@ export const ConfirmTransferScreen: React.FC<ConfirmTransferScreenProps> = ({
       >
         {/* Avatar Big */}
         <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-[#f2f2f2] border-2 border-purple-100 text-neutral-800 flex items-center justify-center text-2xl sm:text-3xl font-extrabold mb-4 shadow-sm">
-          {recipient.initials || 'LM'}
+          {recipient.initials || (recipient.name ? recipient.name.slice(0, 2).toUpperCase() : 'PJ')}
         </div>
 
         <h2 className="font-bold text-base sm:text-lg text-neutral-900 tracking-tight max-w-xs">

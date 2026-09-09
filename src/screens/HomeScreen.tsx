@@ -101,11 +101,15 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <button
               id="btn-home-profile"
               onClick={handleLeftMenuClick}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs"
+              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs font-bold text-sm"
               aria-label="Perfil do usuário ou clique 3x para editar"
               title="Clique 3x para abrir o menu de edição"
             >
-              <User className="w-5 h-5 text-white" />
+              {appData.userInitials ? (
+                <span>{appData.userInitials}</span>
+              ) : (
+                <User className="w-5 h-5 text-white" />
+              )}
               {clickCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-amber-400 text-neutral-900 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
                   {clickCount}
@@ -137,21 +141,23 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Company / Greeting info */}
         <div className="mt-4">
           <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
-            Olá,{' '}
+            Olá{appData.userName ? `, ` : ' '}
             <EditableText
-              value={appData.userName}
+              value={appData.userName || (isInlineEditMode ? 'Definir Nome' : 'Conta PJ')}
               onSave={(val) => onUpdateField('userName', val)}
               isInlineEditMode={isInlineEditMode}
             />
           </p>
-          <div className="text-white/95 text-xs sm:text-sm font-semibold truncate flex items-center gap-1.5 mt-0.5">
-            <Building2 className="w-3.5 h-3.5 text-purple-200 shrink-0" />
-            <EditableText
-              value={appData.companyName}
-              onSave={(val) => onUpdateField('companyName', val)}
-              isInlineEditMode={isInlineEditMode}
-            />
-          </div>
+          {(appData.companyName || isInlineEditMode) && (
+            <div className="text-white/95 text-xs sm:text-sm font-semibold truncate flex items-center gap-1.5 mt-0.5">
+              <Building2 className="w-3.5 h-3.5 text-purple-200 shrink-0" />
+              <EditableText
+                value={appData.companyName || 'Definir Empresa'}
+                onSave={(val) => onUpdateField('companyName', val)}
+                isInlineEditMode={isInlineEditMode}
+              />
+            </div>
+          )}
         </div>
 
         {/* Reminder Card */}
@@ -377,29 +383,32 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       </div>
 
       {/* Nu Empresas Highlights Banner */}
-      <div className="px-5 py-2">
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50/50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between">
-          <div>
-            <p className="text-xs font-bold text-[#820AD1]">
-              <EditableText
-                value={appData.bannerTitle}
-                onSave={(val) => onUpdateField('bannerTitle', val)}
-                isInlineEditMode={isInlineEditMode}
-              />
-            </p>
-            <p className="text-[12px] text-neutral-600 mt-0.5">
-              <EditableText
-                value={appData.bannerSubtitle}
-                onSave={(val) => onUpdateField('bannerSubtitle', val)}
-                isInlineEditMode={isInlineEditMode}
-              />
-            </p>
+      {/* Banner Promocional / Capital de Giro (apenas se configurado) */}
+      {(appData.bannerTitle || isInlineEditMode) && (
+        <div className="px-5 py-2">
+          <div className="bg-gradient-to-r from-purple-50 to-indigo-50/50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold text-[#820AD1]">
+                <EditableText
+                  value={appData.bannerTitle || 'Título do Banner'}
+                  onSave={(val) => onUpdateField('bannerTitle', val)}
+                  isInlineEditMode={isInlineEditMode}
+                />
+              </p>
+              <p className="text-[12px] text-neutral-600 mt-0.5">
+                <EditableText
+                  value={appData.bannerSubtitle || 'Subtítulo do Banner'}
+                  onSave={(val) => onUpdateField('bannerSubtitle', val)}
+                  isInlineEditMode={isInlineEditMode}
+                />
+              </p>
+            </div>
+            <button className="text-xs font-bold text-[#820AD1] bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-2xs shrink-0 ml-2">
+              Simular
+            </button>
           </div>
-          <button className="text-xs font-bold text-[#820AD1] bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-2xs shrink-0 ml-2">
-            Simular
-          </button>
         </div>
-      </div>
+      )}
 
       <div className="h-1.5 bg-[#f0f1f5] my-3" />
 

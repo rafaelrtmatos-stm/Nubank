@@ -95,22 +95,21 @@ export function parseBillText(text: string): ExtractedBillData {
   }
 
   // 3. Beneficiary Name
-  let beneficiaryName = 'EQUATORIAL PARÁ DISTRIBUIDORA DE ENERGIA S.A.';
-  const benefMatch = clean.match(/BENEFICIÁRIO\s+([A-ZÁ-Ú\s.,\-]+?)(?=\s+UNIDADE|\s+CNPJ|\s+AGÊNCIA|\s+\d)/i) ||
-                     clean.match(/Equatorial\s+[A-Za-zá-ú\s]+S\.?A\.?/i);
+  let beneficiaryName = 'Beneficiário do Boleto';
+  const benefMatch = clean.match(/BENEFICIÁRIO\s+([A-ZÁ-Ú\s.,\-]+?)(?=\s+UNIDADE|\s+CNPJ|\s+AGÊNCIA|\s+\d)/i);
   if (benefMatch && benefMatch[1]?.trim().length > 4) {
     beneficiaryName = benefMatch[1].trim().toUpperCase();
   }
 
   // 4. CNPJ
-  let beneficiaryCnpj = '04895728000180';
+  let beneficiaryCnpj = '';
   const cnpjMatch = clean.match(/CNPJ[:\s]*(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})/i);
   if (cnpjMatch && cnpjMatch[1]) {
     beneficiaryCnpj = cnpjMatch[1].replace(/\D/g, '');
   }
 
   // 5. Bank / Institution
-  let beneficiaryBank = 'BCO DO BRASIL S.A.';
+  let beneficiaryBank = 'Banco Emissor';
   if (/BANCO DO BRASIL/i.test(clean)) {
     beneficiaryBank = 'BCO DO BRASIL S.A.';
   } else if (/BRADESCO/i.test(clean)) {
@@ -131,8 +130,6 @@ export function parseBillText(text: string): ExtractedBillData {
                         clean.match(/SEU NÚMERO\s*[:\s]*(\d+)/i);
   if (nossoNumMatch && nossoNumMatch[1]) {
     nossoNumero = nossoNumMatch[1].trim();
-  } else {
-    nossoNumero = '33733842660612719';
   }
 
   // Barcode / Linha Digitável (47 ou 48 dígitos ou com pontos/espaços)
@@ -142,19 +139,14 @@ export function parseBillText(text: string): ExtractedBillData {
                        clean.match(/(\d{44,48})/);
   if (barcodeMatch && barcodeMatch[1]) {
     barcodeNumber = barcodeMatch[1].trim();
-  } else {
-    barcodeNumber = '00190.00009 03373.384266 60612.719173 1 00000000087974';
   }
 
   // 7. Payer Name (if present in fatura)
   let payerName = '';
   const payerMatch = clean.match(/NOME DO PAGADOR\/CPF\/CNPJ\/ENDEREÇO\s+([A-Z\s]+?)(?=\s+\d{3}\.|\s+CPF|\s+ET\b)/i) ||
-                     clean.match(/CLASSIFICAÇÃO[^\n]+?(?:TIPO[^\n]+?)?([A-Z\s]{4,35})\s+CPF/i) ||
-                     clean.match(/DANIEL SOUZA DE ANDRADE/i);
+                     clean.match(/CLASSIFICAÇÃO[^\n]+?(?:TIPO[^\n]+?)?([A-Z\s]{4,35})\s+CPF/i);
   if (payerMatch && payerMatch[1]?.trim().length > 3) {
     payerName = payerMatch[1].trim();
-  } else if (/DANIEL SOUZA DE ANDRADE/i.test(clean)) {
-    payerName = 'DANIEL SOUZA DE ANDRADE';
   }
 
   // 8. Payer CPF
@@ -163,8 +155,6 @@ export function parseBillText(text: string): ExtractedBillData {
                    clean.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
   if (cpfMatch && cpfMatch[1]) {
     payerCpf = cpfMatch[1].trim();
-  } else if (/950\.246\.202-59/.test(clean) || /246\.20/.test(clean)) {
-    payerCpf = '950.246.202-59';
   }
 
   return {
@@ -172,8 +162,8 @@ export function parseBillText(text: string): ExtractedBillData {
     beneficiaryCnpj,
     beneficiaryBank,
     beneficiaryAccountType: 'Conta corrente',
-    amount: amount || 879.74,
-    dueDate: dueDate || '20.07.2026',
+    amount: amount || 0,
+    dueDate: dueDate || new Date().toLocaleDateString('pt-BR'),
     nossoNumero,
     barcodeNumber,
     payerName,

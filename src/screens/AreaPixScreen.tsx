@@ -138,6 +138,11 @@ export const AreaPixScreen: React.FC<AreaPixScreenProps> = ({
               </span>
             </button>
           ))}
+          {contacts.length === 0 && (
+            <div className="py-3 text-neutral-400 text-xs text-center w-full">
+              Nenhum contato frequente cadastrado.
+            </div>
+          )}
         </div>
       </div>
 
