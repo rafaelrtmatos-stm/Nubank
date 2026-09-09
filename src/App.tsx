@@ -18,8 +18,12 @@ import { ScanQrCodeScreen } from './screens/ScanQrCodeScreen';
 import { EditMenuModal } from './components/EditMenuModal';
 import { PixPushNotification } from './components/PixPushNotification';
 import { AppCustomData, Contact, ScreenName, Transaction, TransferData, ActivePixNotification } from './types';
-import { DEFAULT_APP_DATA } from './data/mockData';
+import { DEFAULT_APP_DATA, INITIAL_TRANSACTIONS } from './data/mockData';
 import { playPixNotificationSound } from './utils/audio';
+import { 
+  showNativeSystemNotification, 
+  registerServiceWorkerForNotifications 
+} from './utils/nativeNotification';
 import { CheckCircle2, Sliders, Edit3, ArrowDownLeft } from 'lucide-react';
 
 const STORAGE_KEY = 'nu_empresas_custom_data_v2';
@@ -34,11 +38,23 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        // Ensure the app always has at least 10 transactions
+        let loadedTransactions: Transaction[] = [];
+        if (Array.isArray(parsed.transactions) && parsed.transactions.length >= 10) {
+          loadedTransactions = parsed.transactions;
+        } else if (Array.isArray(parsed.transactions) && parsed.transactions.length > 0) {
+          const existingIds = new Set(parsed.transactions.map((t: Transaction) => t.id));
+          const missing = INITIAL_TRANSACTIONS.filter((t) => !existingIds.has(t.id));
+          loadedTransactions = [...parsed.transactions, ...missing];
+        } else {
+          loadedTransactions = INITIAL_TRANSACTIONS;
+        }
+
         return {
           ...DEFAULT_APP_DATA,
           ...parsed,
           contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
-          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+          transactions: loadedTransactions,
         };
       }
     } catch (e) {
@@ -74,6 +90,11 @@ export default function App() {
   });
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Initialize service worker for native push notifications on device status bar
+  useEffect(() => {
+    registerServiceWorkerForNotifications();
+  }, []);
 
   // Auto-save to localStorage whenever appData updates
   useEffect(() => {
@@ -131,6 +152,14 @@ export default function App() {
       if (appData.pixNotificationSound !== false) {
         playPixNotificationSound();
       }
+
+      // Trigger native device system notification (aparece na barra de notificações do celular/PC em segundo plano)
+      showNativeSystemNotification({
+        senderName: finalSender,
+        amount: finalAmount,
+        bankName: finalBank,
+        message: finalMsg,
+      });
 
       // Auto update balance and add to transaction history
       if (appData.pixAutoCreditBalance !== false) {

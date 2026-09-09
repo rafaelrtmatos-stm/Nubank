@@ -18,10 +18,19 @@ import {
   Zap,
   ArrowDownLeft,
   Volume2,
-  Clock
+  Clock,
+  Smartphone,
+  CheckCircle2,
+  ShieldCheck,
+  AlertCircle
 } from 'lucide-react';
 import { AppCustomData, Transaction, Contact } from '../types';
 import { parseCurrency, formatCurrencyBRL } from '../utils/currencyUtils';
+import { 
+  getNativeNotificationPermission, 
+  requestNativeNotificationPermission, 
+  NotificationPermissionState 
+} from '../utils/nativeNotification';
 
 interface EditMenuModalProps {
   isOpen: boolean;
@@ -65,6 +74,8 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
   >('simulate_pix');
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [triggerStatus, setTriggerStatus] = useState<string | null>(null);
+  const [nativePerm, setNativePerm] = useState<NotificationPermissionState>(getNativeNotificationPermission());
+  const [customDelay, setCustomDelay] = useState<string>('15');
 
   // Sync with prop if opened
   React.useEffect(() => {
@@ -77,9 +88,15 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
       setDefaultTransferAmountString(
         data.defaultTransferAmount === 0 ? '' : (data.defaultTransferAmount || 0).toFixed(2).replace('.', ',')
       );
+      setNativePerm(getNativeNotificationPermission());
       setSavedSuccess(false);
     }
   }, [isOpen, data]);
+
+  const handleRequestNativePermission = async () => {
+    const res = await requestNativeNotificationPermission();
+    setNativePerm(res);
+  };
 
   if (!isOpen) return null;
 
@@ -289,11 +306,59 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                 </p>
               </div>
 
-              {/* Trigger Instant Actions */}
+              {/* Background System Notification Permission Card */}
+              <div className={`p-4 rounded-2xl border transition-all ${
+                nativePerm === 'granted' 
+                  ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' 
+                  : 'bg-purple-50/80 border-purple-200 text-purple-950'
+              }`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      nativePerm === 'granted' ? 'bg-emerald-500 text-white' : 'bg-[#820AD1] text-white'
+                    }`}>
+                      <Smartphone className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-xs sm:text-sm">
+                          Notificação na Barra de Status (Segundo Plano)
+                        </h4>
+                        {nativePerm === 'granted' ? (
+                          <span className="bg-emerald-200 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Ativada no Sistema
+                          </span>
+                        ) : (
+                          <span className="bg-purple-200 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            Requer Permissão
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-600 mt-1 leading-snug">
+                        {nativePerm === 'granted'
+                          ? 'Perfeito! As notificações do Pix aparecerão diretamente na barra de notificações do seu celular ou computador, mesmo com a tela minimizada.'
+                          : 'Clique abaixo para permitir que o navegador envie notificações nativas para a barra de status do seu celular/PC quando o app estiver em segundo plano.'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {nativePerm !== 'granted' && (
+                    <button
+                      type="button"
+                      onClick={handleRequestNativePermission}
+                      className="shrink-0 bg-[#820AD1] hover:bg-[#6c07af] active:scale-95 text-white font-bold text-xs py-2 px-3 rounded-xl transition-all shadow-xs cursor-pointer"
+                    >
+                      Ativar no Aparelho
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Trigger Actions with Background Delay Presets */}
               <div className="bg-neutral-900 text-white p-4 rounded-2xl space-y-3 shadow-md">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-xs flex items-center gap-1.5 text-emerald-400">
-                    <Zap className="w-4 h-4 fill-emerald-400" /> Disparadores Rápidos
+                    <Zap className="w-4 h-4 fill-emerald-400" /> Disparar Notificação Pix
                   </span>
                   {triggerStatus && (
                     <span className="text-[11px] text-amber-300 font-semibold animate-pulse">
@@ -302,7 +367,7 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     type="button"
                     onClick={() => {
@@ -323,7 +388,7 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                     }}
                     className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-neutral-950 font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer shadow-xs"
                   >
-                    <Zap className="w-3.5 h-3.5" /> Disparar Agora
+                    <Zap className="w-3.5 h-3.5" /> Agora (0s)
                   </button>
 
                   <button
@@ -335,9 +400,9 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                           formData.simulatedPixAmount,
                           formData.simulatedPixBank,
                           formData.simulatedPixMessage,
-                          3
+                          5
                         );
-                        setTriggerStatus('Em 3 segundos...');
+                        setTriggerStatus('Em 5 segundos...');
                         setTimeout(() => {
                           setTriggerStatus(null);
                           onClose();
@@ -346,7 +411,7 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                     }}
                     className="bg-purple-600 hover:bg-purple-700 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer shadow-xs"
                   >
-                    <Clock className="w-3.5 h-3.5" /> Em 3 segundos
+                    <Clock className="w-3.5 h-3.5" /> Em 5 segundos
                   </button>
 
                   <button
@@ -358,9 +423,9 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                           formData.simulatedPixAmount,
                           formData.simulatedPixBank,
                           formData.simulatedPixMessage,
-                          10
+                          15
                         );
-                        setTriggerStatus('Em 10 segundos...');
+                        setTriggerStatus('Em 15 segundos...');
                         setTimeout(() => {
                           setTriggerStatus(null);
                           onClose();
@@ -369,8 +434,79 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                     }}
                     className="bg-neutral-800 hover:bg-neutral-700 active:scale-95 text-neutral-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer border border-neutral-700"
                   >
-                    <Clock className="w-3.5 h-3.5" /> Em 10 segundos
+                    <Clock className="w-3.5 h-3.5" /> Em 15 segundos
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onTriggerSimulatedPix) {
+                        onTriggerSimulatedPix(
+                          formData.simulatedPixSender,
+                          formData.simulatedPixAmount,
+                          formData.simulatedPixBank,
+                          formData.simulatedPixMessage,
+                          30
+                        );
+                        setTriggerStatus('Em 30 segundos...');
+                        setTimeout(() => {
+                          setTriggerStatus(null);
+                          onClose();
+                        }, 500);
+                      }
+                    }}
+                    className="bg-neutral-800 hover:bg-neutral-700 active:scale-95 text-neutral-200 font-semibold py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all text-xs cursor-pointer border border-neutral-700"
+                  >
+                    <Clock className="w-3.5 h-3.5" /> Em 30 segundos
+                  </button>
+                </div>
+
+                {/* Custom Delay Input */}
+                <div className="pt-1 flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 bg-neutral-800 border border-neutral-700 rounded-xl px-2.5 py-1.5 text-xs text-neutral-300 flex-1">
+                    <span className="text-[11px] text-neutral-400">Tempo customizado:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="300"
+                      value={customDelay}
+                      onChange={(e) => setCustomDelay(e.target.value)}
+                      className="w-14 bg-neutral-900 border border-neutral-600 rounded px-1.5 py-0.5 text-white text-center font-bold focus:outline-none focus:border-purple-400"
+                    />
+                    <span className="text-[11px] text-neutral-400">segundos</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const delayNum = parseInt(customDelay, 10);
+                      const finalDelay = isNaN(delayNum) || delayNum < 1 ? 10 : delayNum;
+                      if (onTriggerSimulatedPix) {
+                        onTriggerSimulatedPix(
+                          formData.simulatedPixSender,
+                          formData.simulatedPixAmount,
+                          formData.simulatedPixBank,
+                          formData.simulatedPixMessage,
+                          finalDelay
+                        );
+                        setTriggerStatus(`Em ${finalDelay} segundos...`);
+                        setTimeout(() => {
+                          setTriggerStatus(null);
+                          onClose();
+                        }, 500);
+                      }
+                    }}
+                    className="bg-purple-700 hover:bg-purple-600 active:scale-95 text-white font-bold py-2 px-3 rounded-xl text-xs transition-all cursor-pointer shrink-0"
+                  >
+                    Agendar
+                  </button>
+                </div>
+
+                <div className="bg-neutral-800/80 rounded-xl p-2.5 text-[11px] text-neutral-300 flex items-start gap-2 border border-neutral-700/60">
+                  <span className="text-sm">💡</span>
+                  <p className="leading-tight">
+                    <strong>Como testar em segundo plano:</strong> Selecione 15s ou 30s, clique no botão e imediatamente minimize o app ou bloqueie a tela do celular. A notificação cairá diretamente na barra de notificações do seu aparelho!
+                  </p>
                 </div>
               </div>
 

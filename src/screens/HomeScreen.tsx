@@ -595,7 +595,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   Simule o cliente efetuando o pagamento deste Pix. A notificação bancária descerá da aba do celular com o som de confirmação.
                 </p>
 
-                <div className="grid grid-cols-2 gap-2 pt-1">
+                <div className="grid grid-cols-3 gap-2 pt-1">
                   <button
                     onClick={() => {
                       if (onTriggerSimulatedPix) {
@@ -609,9 +609,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                       }
                       setShowCobrarModal(false);
                     }}
-                    className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-neutral-950 font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                    className="bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-neutral-950 font-bold py-2.5 px-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                   >
-                    <Zap className="w-3.5 h-3.5" /> Disparar Agora
+                    <Zap className="w-3.5 h-3.5" /> Agora
                   </button>
 
                   <button
@@ -622,14 +622,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                           appData.simulatedPixAmount,
                           appData.simulatedPixBank,
                           appData.simulatedPixMessage,
-                          3
+                          5
                         );
                       }
                       setShowCobrarModal(false);
                     }}
-                    className="bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                    className="bg-purple-600 hover:bg-purple-500 active:scale-95 text-white font-bold py-2.5 px-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer shadow-sm"
                   >
-                    <span>Em 3 segundos</span>
+                    <span>Em 5s</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      if (onTriggerSimulatedPix) {
+                        onTriggerSimulatedPix(
+                          appData.simulatedPixSender,
+                          appData.simulatedPixAmount,
+                          appData.simulatedPixBank,
+                          appData.simulatedPixMessage,
+                          15
+                        );
+                      }
+                      setShowCobrarModal(false);
+                    }}
+                    className="bg-neutral-800 hover:bg-neutral-700 active:scale-95 text-neutral-200 font-bold py-2.5 px-2 rounded-xl text-xs flex items-center justify-center gap-1 cursor-pointer shadow-sm border border-neutral-700"
+                    title="Tempo para você minimizar o app e ver a notificação na barra do celular"
+                  >
+                    <span>Em 15s (2º plano)</span>
                   </button>
                 </div>
               </div>
