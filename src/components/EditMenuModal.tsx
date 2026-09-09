@@ -25,6 +25,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { AppCustomData, Transaction, Contact } from '../types';
+import { INITIAL_CONTACTS } from '../data/mockData';
 import { parseCurrency, formatCurrencyBRL } from '../utils/currencyUtils';
 import { 
   getNativeNotificationPermission, 
@@ -512,6 +513,51 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
 
               {/* Form Settings */}
               <div className="space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <span className="text-xs font-bold text-neutral-700">Preenchimento Rápido com Comprovantes:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleChange('simulatedPixAmount', 35.0);
+                        setSimulatedPixAmountString('35,00');
+                        handleChange('simulatedPixSender', 'Josiane M Moreira Neves');
+                        handleChange('simulatedPixBank', 'BANCO DO BRASIL S.A.');
+                        handleChange('simulatedPixMessage', 'Pix Banco do Brasil');
+                      }}
+                      className="text-[10px] font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 px-2 py-1 rounded-lg border border-blue-200 cursor-pointer"
+                    >
+                      <span>BB (R$ 35,00)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleChange('simulatedPixAmount', 1200.0);
+                        setSimulatedPixAmountString('1.200,00');
+                        handleChange('simulatedPixSender', 'Elicleia Solange do Nascimento');
+                        handleChange('simulatedPixBank', 'Nu Pagamentos S.A.');
+                        handleChange('simulatedPixMessage', 'Pix Nubank');
+                      }}
+                      className="text-[10px] font-bold text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-lg border border-purple-200 cursor-pointer"
+                    >
+                      <span>Nubank (R$ 1.200,00)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleChange('simulatedPixAmount', 1225.0);
+                        setSimulatedPixAmountString('1.225,00');
+                        handleChange('simulatedPixSender', 'Uclebson Comercio De Eletrodomesticos Ltda');
+                        handleChange('simulatedPixBank', 'BANCO COOPERATIVO SICREDI S.A.');
+                        handleChange('simulatedPixMessage', 'Pix Sicredi');
+                      }}
+                      className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-1 rounded-lg border border-emerald-200 cursor-pointer"
+                    >
+                      <span>Sicredi (R$ 1.225,00)</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="font-semibold text-neutral-700 block mb-1">
@@ -1058,15 +1104,26 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
           {/* TAB: CONTATOS */}
           {activeTab === 'contacts' && (
             <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="font-bold text-neutral-800">Contatos Frequentes da Área Pix</p>
-                <button
-                  type="button"
-                  onClick={handleAddContact}
-                  className="flex items-center gap-1 text-xs font-bold text-[#820AD1] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Adicionar
-                </button>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="font-bold text-neutral-800">Contatos da Agenda Pix ({formData.contacts.length})</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange('contacts', INITIAL_CONTACTS);
+                    }}
+                    className="text-[11px] font-bold text-neutral-600 hover:text-[#820AD1] bg-neutral-100 hover:bg-purple-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    Restaurar Lista Padrão
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddContact}
+                    className="flex items-center gap-1 text-xs font-bold text-[#820AD1] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Adicionar
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2 max-h-[350px] overflow-y-auto pr-1">

@@ -18,7 +18,7 @@ import { ScanQrCodeScreen } from './screens/ScanQrCodeScreen';
 import { EditMenuModal } from './components/EditMenuModal';
 import { PixPushNotification } from './components/PixPushNotification';
 import { AppCustomData, Contact, ScreenName, Transaction, TransferData, ActivePixNotification } from './types';
-import { DEFAULT_APP_DATA, INITIAL_TRANSACTIONS } from './data/mockData';
+import { DEFAULT_APP_DATA, INITIAL_TRANSACTIONS, INITIAL_CONTACTS } from './data/mockData';
 import { playPixNotificationSound } from './utils/audio';
 import { 
   showNativeSystemNotification, 
@@ -50,10 +50,22 @@ export default function App() {
           loadedTransactions = INITIAL_TRANSACTIONS;
         }
 
+        // Ensure the app always has at least 8 contacts
+        let loadedContacts: Contact[] = [];
+        if (Array.isArray(parsed.contacts) && parsed.contacts.length >= 8) {
+          loadedContacts = parsed.contacts;
+        } else if (Array.isArray(parsed.contacts) && parsed.contacts.length > 0) {
+          const existingIds = new Set(parsed.contacts.map((c: Contact) => c.id));
+          const missing = INITIAL_CONTACTS.filter((c) => !existingIds.has(c.id));
+          loadedContacts = [...parsed.contacts, ...missing];
+        } else {
+          loadedContacts = INITIAL_CONTACTS;
+        }
+
         return {
           ...DEFAULT_APP_DATA,
           ...parsed,
-          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
+          contacts: loadedContacts,
           transactions: loadedTransactions,
         };
       }

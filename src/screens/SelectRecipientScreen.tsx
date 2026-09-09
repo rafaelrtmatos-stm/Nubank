@@ -56,7 +56,7 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
 
   // Handler for clicks on the QR Code icon
   // 1 click -> opens ScanQrCode camera screen
-  // 3 clicks in quick succession -> reveals the secret "Puxar de Comprovante" option
+  // 3 clicks in quick succession -> reveals the secret "Extrair de Comprovante" option
   const handleQrSymbolClick = (e: React.MouseEvent) => {
     e.preventDefault();
     qrClickCountRef.current += 1;
@@ -383,7 +383,7 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
                   </div>
                   <div>
                     <h3 className="font-bold text-neutral-900 text-sm">
-                      Puxar de Comprovante
+                      Extrair de Comprovante
                     </h3>
                     <span className="text-[10px] text-purple-700 font-semibold">
                       Opção desbloqueada

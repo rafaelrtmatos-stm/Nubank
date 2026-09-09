@@ -33,6 +33,7 @@ export const RecipientReceiptModal: React.FC<RecipientReceiptModalProps> = ({
   onSaveAndTransfer,
   onSaveOnly,
 }) => {
+  const [activeParty, setActiveParty] = useState<'recipient' | 'payer'>('recipient');
   const [name, setName] = useState('');
   const [document, setDocument] = useState('');
   const [institution, setInstitution] = useState('');
@@ -44,9 +45,16 @@ export const RecipientReceiptModal: React.FC<RecipientReceiptModalProps> = ({
 
   useEffect(() => {
     if (extractedData) {
-      setName(extractedData.name || 'Destinatário Pix');
-      setDocument(extractedData.document || '***.***.***-**');
-      setInstitution(extractedData.institution || 'Nu Pagamentos S.A.');
+      if (activeParty === 'recipient') {
+        setName(extractedData.name || 'Destinatário Pix');
+        setDocument(extractedData.document || '***.***.***-**');
+        setInstitution(extractedData.institution || 'Nu Pagamentos S.A.');
+      } else {
+        setName(extractedData.payerName || 'Pagador Pix');
+        setDocument(extractedData.payerDocument || '***.***.***-**');
+        setInstitution(extractedData.payerInstitution || 'Banco Cooperativo Sicredi S.A.');
+      }
+
       setPixKey(extractedData.pixKey || '');
       setAccountType(extractedData.accountType || 'Conta de pagamentos');
       setAgency(extractedData.agency || '0001');
@@ -57,7 +65,7 @@ export const RecipientReceiptModal: React.FC<RecipientReceiptModalProps> = ({
           : '0,00'
       );
     }
-  }, [extractedData, isOpen]);
+  }, [extractedData, isOpen, activeParty]);
 
   if (!isOpen || !extractedData) return null;
 
@@ -128,20 +136,73 @@ export const RecipientReceiptModal: React.FC<RecipientReceiptModalProps> = ({
             </div>
 
             <h2 className="text-xl font-bold tracking-tight text-white leading-tight">
-              Dados do Recebedor
+              {activeParty === 'recipient' ? 'Dados do Recebedor' : 'Dados do Pagador (Cliente)'}
             </h2>
             <p className="text-xs text-purple-100 mt-1 leading-relaxed">
               {fileName ? `Extraído de "${fileName}". ` : ''}
               Verifique os dados abaixo. O contato será adicionado à sua agenda Pix.
             </p>
+
+            {/* If both Recipient and Payer were identified in the receipt (e.g. Sicredi, BB) */}
+            {extractedData.payerName && extractedData.name && (
+              <div className="mt-3 pt-3 border-t border-white/20 flex flex-col gap-1.5">
+                <span className="text-[10px] uppercase font-bold text-purple-200 tracking-wider">
+                  Quem você deseja cadastrar ou transferir?
+                </span>
+                <div className="grid grid-cols-2 gap-2 bg-black/20 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setActiveParty('recipient')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center truncate ${
+                      activeParty === 'recipient'
+                        ? 'bg-white text-[#820AD1] shadow-xs'
+                        : 'text-purple-200 hover:text-white'
+                    }`}
+                  >
+                    Recebedor: {extractedData.name.split(' ')[0]}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveParty('payer')}
+                    className={`py-1.5 px-2 rounded-lg text-xs font-bold transition-all text-center truncate ${
+                      activeParty === 'payer'
+                        ? 'bg-white text-[#820AD1] shadow-xs'
+                        : 'text-purple-200 hover:text-white'
+                    }`}
+                  >
+                    Pagador: {extractedData.payerName.split(' ')[0]}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Form Content */}
           <div className="p-5 overflow-y-auto space-y-3.5 flex-1 text-neutral-800 text-sm">
+            {/* Receipt Summary Pills */}
+            {(extractedData.payerInstitution || extractedData.transactionId) && (
+              <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-3 text-xs text-purple-950 space-y-1.5">
+                <div className="flex items-center justify-between text-[11px] font-bold text-purple-900">
+                  <span>Banco Emissor do Comprovante</span>
+                  <span className="text-[#820AD1]">{extractedData.payerInstitution || 'Sicredi'}</span>
+                </div>
+                {extractedData.transactionId && (
+                  <div className="text-[10px] text-neutral-600 truncate">
+                    <span className="font-semibold">ID Transação:</span> {extractedData.transactionId}
+                  </div>
+                )}
+                {extractedData.date && (
+                  <div className="text-[10px] text-neutral-600">
+                    <span className="font-semibold">Data/Hora:</span> {extractedData.date}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Nome */}
             <div>
               <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
-                Nome do Recebedor / Favorecido
+                {activeParty === 'recipient' ? 'Nome do Recebedor / Favorecido' : 'Nome do Pagador / Cliente'}
               </label>
               <div className="flex items-center gap-2.5 px-3.5 py-2.5 bg-neutral-50 rounded-xl border border-neutral-200 focus-within:border-[#820AD1] focus-within:bg-white transition-colors">
                 <User className="w-4 h-4 text-neutral-400 shrink-0" />

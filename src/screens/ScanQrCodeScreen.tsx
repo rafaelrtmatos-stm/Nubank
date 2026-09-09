@@ -292,7 +292,7 @@ export const ScanQrCodeScreen: React.FC<ScanQrCodeScreenProps> = ({
           <div className="flex flex-col items-center justify-center px-6 text-center text-white/70">
             <Camera className="w-12 h-12 mb-3 text-neutral-500 stroke-[1.5]" />
             <p className="text-xs max-w-xs leading-relaxed mb-4">
-              Câmera desativada ou não autorizada. Você pode puxar um comprovante ou QR Code em PDF ou imagem.
+              Câmera desativada ou não autorizada. Você pode extrair um comprovante ou QR Code em PDF ou imagem.
             </p>
             <button
               type="button"
@@ -300,7 +300,7 @@ export const ScanQrCodeScreen: React.FC<ScanQrCodeScreenProps> = ({
               className="px-4 py-2.5 rounded-full bg-[#820AD1] text-white text-xs font-bold flex items-center gap-2 cursor-pointer shadow-md"
             >
               <FileText className="w-4 h-4" />
-              <span>Puxar comprovante (PDF / Foto)</span>
+              <span>Extrair comprovante (PDF / Foto)</span>
             </button>
           </div>
         ) : (
@@ -439,7 +439,7 @@ export const ScanQrCodeScreen: React.FC<ScanQrCodeScreenProps> = ({
               </h3>
 
               <p className="text-sm text-neutral-600 mb-5 leading-relaxed">
-                O tempo limite de leitura expirou. Você pode tentar novamente ou puxar os dados de um comprovante em PDF ou foto.
+                O tempo limite de leitura expirou. Você pode tentar novamente ou extrair os dados de um comprovante em PDF ou foto.
               </p>
 
               <div className="w-full flex flex-col gap-2.5">
@@ -453,7 +453,7 @@ export const ScanQrCodeScreen: React.FC<ScanQrCodeScreenProps> = ({
                   className="w-full py-3.5 bg-[#820AD1] hover:bg-[#6d08af] active:scale-[0.98] text-white font-bold rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 text-sm cursor-pointer"
                 >
                   <FileText className="w-4 h-4" />
-                  <span>Puxar comprovante Pix (PDF/Foto)</span>
+                  <span>Extrair comprovante Pix (PDF/Foto)</span>
                 </button>
 
                 <button
