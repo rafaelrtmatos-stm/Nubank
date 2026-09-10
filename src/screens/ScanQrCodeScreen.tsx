@@ -274,8 +274,35 @@ export const ScanQrCodeScreen: React.FC<ScanQrCodeScreenProps> = ({
     onGoBack();
   };
 
+  const tripleTapRef = useRef<number>(0);
+  const tripleTapTimeout = useRef<any>(null);
+
+  const handleScreenTripleTap = () => {
+    tripleTapRef.current += 1;
+    if (tripleTapTimeout.current) clearTimeout(tripleTapTimeout.current);
+
+    if (tripleTapRef.current >= 3) {
+      tripleTapRef.current = 0;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate([40, 40, 40]);
+        } catch (e) {
+          // ignore
+        }
+      }
+      fileInputRef.current?.click();
+    } else {
+      tripleTapTimeout.current = setTimeout(() => {
+        tripleTapRef.current = 0;
+      }, 420);
+    }
+  };
+
   return (
-    <div className="relative w-full h-full bg-black select-none font-sans overflow-hidden flex flex-col justify-between">
+    <div 
+      onClick={handleScreenTripleTap}
+      className="relative w-full h-full bg-black select-none font-sans overflow-hidden flex flex-col justify-between"
+    >
       {/* Hidden file input for PDF / Photo receipt */}
       <input
         ref={fileInputRef}

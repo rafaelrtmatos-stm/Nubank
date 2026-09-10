@@ -11,7 +11,7 @@ import {
   UploadCloud
 } from 'lucide-react';
 import { Contact } from '../types';
-import { extractRecipientFromReceipt, ExtractedRecipientData } from '../utils/transferReceiptParser';
+import { extractRecipientFromReceipt, ExtractedRecipientData, getSampleReceiptData } from '../utils/transferReceiptParser';
 import { RecipientReceiptModal } from '../components/RecipientReceiptModal';
 
 interface SelectRecipientScreenProps {
@@ -20,6 +20,7 @@ interface SelectRecipientScreenProps {
   onNavigateScanQrCode?: () => void;
   onAddContact?: (contact: Contact) => void;
   contacts: Contact[];
+  initialShowReceiptSecret?: boolean;
 }
 
 export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
@@ -28,9 +29,10 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
   onNavigateScanQrCode,
   onAddContact,
   contacts,
+  initialShowReceiptSecret = false,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [showReceiptSecretOption, setShowReceiptSecretOption] = useState(false);
+  const [showReceiptSecretOption, setShowReceiptSecretOption] = useState(initialShowReceiptSecret);
   const [isProcessingReceipt, setIsProcessingReceipt] = useState(false);
   const [extractedRecipient, setExtractedRecipient] = useState<ExtractedRecipientData | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
@@ -70,14 +72,19 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
       qrClickCountRef.current = 0;
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
-          navigator.vibrate([40, 40, 40]);
+          navigator.vibrate([50, 40, 50]);
         } catch (err) {
           // ignore
         }
       }
       setShowReceiptSecretOption(true);
+      showToast('Importação de comprovante ativada!');
+      // Trigger file selector automatically on 3rd click
+      setTimeout(() => {
+        fileInputRef.current?.click();
+      }, 180);
     } else {
-      // Wait to see if further clicks follow
+      // Wait to see if further clicks follow within 420ms
       qrClickTimeoutRef.current = setTimeout(() => {
         const count = qrClickCountRef.current;
         qrClickCountRef.current = 0;
@@ -87,7 +94,7 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
             onNavigateScanQrCode();
           }
         }
-      }, 380);
+      }, 420);
     }
   };
 
@@ -145,16 +152,8 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
       setExtractedRecipient(extracted);
       setIsReceiptModalOpen(true);
     } catch (err) {
-      console.warn('Receipt parsing error:', err);
-      setExtractedRecipient({
-        name: 'Destinatário Comprovante',
-        initials: 'DC',
-        document: '***.000.000-**',
-        institution: 'Nu Pagamentos S.A.',
-        accountType: 'Conta de pagamentos',
-        pixKey: '',
-        amount: 0,
-      });
+      console.warn('Receipt parsing error, fallback to sample data:', err);
+      setExtractedRecipient(getSampleReceiptData());
       setIsReceiptModalOpen(true);
     } finally {
       setIsProcessingReceipt(false);
@@ -262,6 +261,65 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
             </motion.button>
           )}
         </div>
+
+        {/* Card de Importação de Comprovante Bancário / Pix (SÓ APARECE AO CLICAR 3x NO QR CODE) */}
+        <AnimatePresence>
+          {showReceiptSecretOption && (
+            <motion.div 
+              initial={{ opacity: 0, height: 0, scale: 0.96 }}
+              animate={{ opacity: 1, height: 'auto', scale: 1 }}
+              exit={{ opacity: 0, height: 0, scale: 0.96 }}
+              transition={{ duration: 0.25, ease: 'easeOut' }}
+              className="mt-5 p-4 rounded-2xl bg-gradient-to-br from-purple-50/90 to-purple-100/40 border border-purple-200/80 shadow-xs overflow-hidden"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#820AD1] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-neutral-900">
+                        Importar dados de comprovante
+                      </span>
+                      <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-purple-200 text-purple-900">
+                        IA / OCR
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-neutral-500 mt-0.5 leading-snug">
+                      Extrai nome, chave Pix, banco, conta e valor (PDF ou foto).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <button
+                  type="button"
+                  id="btn-upload-receipt-direct"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex-1 py-2.5 px-3 bg-[#820AD1] hover:bg-[#6f09b5] active:scale-[0.98] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-xs cursor-pointer"
+                >
+                  <UploadCloud className="w-3.5 h-3.5" />
+                  <span>Selecionar Comprovante</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-load-sample-receipt"
+                  onClick={() => {
+                    setExtractedRecipient(getSampleReceiptData());
+                    setUploadedFileName('comprovante-transferencia-ingrid.jfif');
+                    setIsReceiptModalOpen(true);
+                  }}
+                  className="py-2.5 px-3 bg-white hover:bg-neutral-50 text-[#820AD1] border border-purple-200 rounded-xl text-xs font-bold transition-all cursor-pointer whitespace-nowrap shadow-2xs"
+                  title="Testar com comprovante de exemplo (Ingrid Aline - Nu Pagamentos)"
+                >
+                  Exemplo
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Section: Você sempre costuma pagar */}
         {!searchQuery && frequentContacts.length > 0 && (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'motion/react';
-import { ChevronLeft, ShieldCheck, CheckCircle2, Building, Calendar, Wallet, Lock } from 'lucide-react';
+import { ChevronLeft, ShieldCheck, CheckCircle2, Building, Calendar, Wallet, Lock, KeyRound } from 'lucide-react';
 import { TransferData } from '../types';
 import { PasswordModal } from '../components/PasswordModal';
 
@@ -88,6 +88,28 @@ export const ConfirmTransferScreen: React.FC<ConfirmTransferScreenProps> = ({
 
         {/* Breakdown Items */}
         <div className="w-full max-w-xs mt-4 text-left divide-y divide-neutral-100 text-xs text-neutral-600">
+          {recipient.pixKey && (
+            <div className="py-2.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-neutral-500">
+                <KeyRound className="w-3.5 h-3.5 text-[#820AD1]" /> Chave Pix
+              </span>
+              <span className="font-semibold text-neutral-800 font-mono text-[11px] truncate max-w-[170px]">
+                {recipient.pixKey}
+              </span>
+            </div>
+          )}
+
+          {(recipient.agency || recipient.account) && (
+            <div className="py-2.5 flex items-center justify-between">
+              <span className="flex items-center gap-1.5 text-neutral-500">
+                <Building className="w-3.5 h-3.5" /> Conta
+              </span>
+              <span className="font-semibold text-neutral-800 text-[11px]">
+                Ag {recipient.agency || '0001'} • Cc {recipient.account || '---'}
+              </span>
+            </div>
+          )}
+
           <div className="py-2.5 flex items-center justify-between">
             <span className="flex items-center gap-1.5 text-neutral-500">
               <Calendar className="w-3.5 h-3.5" /> Quando

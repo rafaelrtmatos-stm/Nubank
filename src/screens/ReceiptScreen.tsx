@@ -72,6 +72,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
 
   // Recipient (Destino / Beneficiário) info from recipient searched/selected
   const destName = recipient.name || (isBillPayment ? 'Concessionária de Energia S.A.' : 'Destinatário Pix');
+  const destPixKey = recipient.pixKey || '';
   const destInstitution = recipient.institution || 'NU PAGAMENTOS - IP';
   const destAgency = recipient.agency || '0001';
   const destAccount = recipient.account || '00000000-0';
@@ -369,6 +370,15 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                         {destInstitution}
                       </span>
                     </div>
+
+                    {destPixKey && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-neutral-900 font-normal">Chave Pix</span>
+                        <span className="text-neutral-900 font-normal text-right font-mono text-xs">
+                          {destPixKey}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-center">
                       <span className="text-neutral-900 font-normal">Agência</span>

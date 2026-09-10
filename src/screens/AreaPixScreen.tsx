@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { motion } from 'motion/react';
 import { 
   X, 
@@ -15,7 +15,7 @@ import { Contact } from '../types';
 
 interface AreaPixScreenProps {
   onGoBack: () => void;
-  onNavigateTransfer: (contact?: Contact) => void;
+  onNavigateTransfer: (contact?: Contact, amount?: number, unlockReceiptSecret?: boolean) => void;
   onNavigateScanQrCode: () => void;
   contacts: Contact[];
 }
@@ -26,6 +26,34 @@ export const AreaPixScreen: React.FC<AreaPixScreenProps> = ({
   onNavigateScanQrCode,
   contacts,
 }) => {
+  const qrClicksRef = useRef<number>(0);
+  const qrTimeoutRef = useRef<any>(null);
+
+  const handleQrClick = () => {
+    qrClicksRef.current += 1;
+    if (qrTimeoutRef.current) clearTimeout(qrTimeoutRef.current);
+
+    if (qrClicksRef.current >= 3) {
+      qrClicksRef.current = 0;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate([40, 40, 40]);
+        } catch (e) {
+          // ignore
+        }
+      }
+      // Triple click: open transfer screen with receipt import revealed
+      onNavigateTransfer(undefined, undefined, true);
+    } else {
+      qrTimeoutRef.current = setTimeout(() => {
+        if (qrClicksRef.current === 1) {
+          onNavigateScanQrCode();
+        }
+        qrClicksRef.current = 0;
+      }, 380);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white select-none overflow-y-auto pb-10">
       {/* Top Close Bar with Safe Area */}
@@ -88,8 +116,9 @@ export const AreaPixScreen: React.FC<AreaPixScreenProps> = ({
           {/* Ler QR Code */}
           <button
             id="btn-pix-qrcode"
-            onClick={onNavigateScanQrCode}
+            onClick={handleQrClick}
             className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
+            title="Ler QR code (toque 3x para importar comprovante)"
           >
             <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
               <QrCode className="w-7 h-7 text-neutral-900" />

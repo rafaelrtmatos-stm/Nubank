@@ -258,16 +258,16 @@ export const RecipientReceiptModal: React.FC<RecipientReceiptModalProps> = ({
               {/* Chave Pix */}
               <div>
                 <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
-                  Chave Pix (opcional)
+                  Chave Pix
                 </label>
                 <div className="flex items-center gap-2 px-3 py-2.5 bg-neutral-50 rounded-xl border border-neutral-200 focus-within:border-[#820AD1] focus-within:bg-white transition-colors">
-                  <KeyRound className="w-4 h-4 text-neutral-400 shrink-0" />
+                  <KeyRound className="w-4 h-4 text-[#820AD1] shrink-0" />
                   <input
                     type="text"
                     value={pixKey}
                     onChange={(e) => setPixKey(e.target.value)}
                     className="w-full bg-transparent font-medium text-neutral-900 focus:outline-none text-xs"
-                    placeholder="E-mail, CPF, tel ou chave"
+                    placeholder="+5593991375497 ou e-mail/CPF"
                   />
                 </div>
               </div>
@@ -284,6 +284,41 @@ export const RecipientReceiptModal: React.FC<RecipientReceiptModalProps> = ({
                     onChange={(e) => setAccountType(e.target.value)}
                     className="w-full bg-transparent font-medium text-neutral-900 focus:outline-none text-xs"
                     placeholder="Conta de pagamentos"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Agência e Conta do Destinatário */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Agência */}
+              <div>
+                <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
+                  Agência
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-neutral-50 rounded-xl border border-neutral-200 focus-within:border-[#820AD1] focus-within:bg-white transition-colors">
+                  <input
+                    type="text"
+                    value={agency}
+                    onChange={(e) => setAgency(e.target.value)}
+                    className="w-full bg-transparent font-medium text-neutral-900 focus:outline-none text-xs"
+                    placeholder="0001"
+                  />
+                </div>
+              </div>
+
+              {/* Conta com dígito */}
+              <div>
+                <label className="text-[11px] font-bold text-neutral-500 uppercase tracking-wider block mb-1">
+                  Número da Conta (com dígito)
+                </label>
+                <div className="flex items-center gap-2 px-3 py-2.5 bg-neutral-50 rounded-xl border border-neutral-200 focus-within:border-[#820AD1] focus-within:bg-white transition-colors">
+                  <input
+                    type="text"
+                    value={account}
+                    onChange={(e) => setAccount(e.target.value)}
+                    className="w-full bg-transparent font-medium text-neutral-900 focus:outline-none text-xs"
+                    placeholder="93991375-4"
                   />
                 </div>
               </div>

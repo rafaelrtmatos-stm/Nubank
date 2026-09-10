@@ -79,6 +79,7 @@ export default function App() {
   const [skipIntro, setSkipIntro] = useState<boolean>(false);
   const [preselectedContact, setPreselectedContact] = useState<Contact | null>(null);
   const [transferInitialAmount, setTransferInitialAmount] = useState<number | undefined>(undefined);
+  const [receiptSecretUnlocked, setReceiptSecretUnlocked] = useState(false);
   
   // Edit mode states
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
@@ -263,7 +264,8 @@ export default function App() {
     });
   };
 
-  const handleStartTransfer = (contact?: Contact, amount?: number) => {
+  const handleStartTransfer = (contact?: Contact, amount?: number, unlockSecret?: boolean) => {
+    setReceiptSecretUnlocked(!!unlockSecret);
     if (contact) {
       setPreselectedContact(contact);
       setTransferInitialAmount(amount);
@@ -426,11 +428,18 @@ export default function App() {
               className="w-full h-full flex-1"
             >
               <SelectRecipientScreen
-                onGoBack={goBack}
-                onSelectRecipient={handleSelectRecipient}
+                onGoBack={() => {
+                  setReceiptSecretUnlocked(false);
+                  goBack();
+                }}
+                onSelectRecipient={(c, amt) => {
+                  setReceiptSecretUnlocked(false);
+                  handleSelectRecipient(c, amt);
+                }}
                 onNavigateScanQrCode={() => navigateTo('ScanQrCode')}
                 onAddContact={handleAddContact}
                 contacts={appData.contacts}
+                initialShowReceiptSecret={receiptSecretUnlocked}
               />
             </motion.div>
           )}
