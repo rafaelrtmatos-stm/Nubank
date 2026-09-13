@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { 
   User, 
@@ -20,12 +20,25 @@ import {
   X,
   Zap,
   Copy,
-  Edit2
+  Edit2,
+  Dices,
+  CheckCircle2,
+  Monitor,
+  Hexagon,
+  Image as ImageIcon,
+  Pencil,
+  Users,
+  RotateCcw,
+  CornerUpLeft,
+  Heart,
+  Store,
+  UserPlus
 } from 'lucide-react';
 import { AppCustomData, ScreenName, Transaction } from '../types';
 import { EditableText } from '../components/EditableText';
 import { QuickBalanceModal } from '../components/QuickBalanceModal';
 import { parseCurrency } from '../utils/currencyUtils';
+import { generateRandomBankAccount } from '../utils/bankGenerator';
 
 interface HomeScreenProps {
   appData: AppCustomData;
@@ -57,30 +70,73 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [showCobrarModal, setShowCobrarModal] = useState(false);
   const [showQuickBalanceModal, setShowQuickBalanceModal] = useState(false);
-  const [clickCount, setClickCount] = useState(0);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Triple click handler on avatar: 1 click = authentic Nubank profile card, 3 clicks = admin configuration
+  const clickCountRef = useRef<number>(0);
   const clickTimeoutRef = useRef<any>(null);
 
-  // Triple click handler on left menu icon
   const handleLeftMenuClick = () => {
-    const newCount = clickCount + 1;
-    setClickCount(newCount);
+    clickCountRef.current += 1;
+    const currentClicks = clickCountRef.current;
 
     if (clickTimeoutRef.current) {
       clearTimeout(clickTimeoutRef.current);
     }
 
-    if (newCount >= 3) {
-      setClickCount(0);
+    if (currentClicks >= 3) {
+      clickCountRef.current = 0;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate([40, 40, 40]);
+        } catch (e) {
+          // ignore
+        }
+      }
+      setShowProfileModal(false);
       onOpenEditModal();
       return;
     }
 
     clickTimeoutRef.current = setTimeout(() => {
-      if (newCount === 1) {
+      if (clickCountRef.current === 1 || clickCountRef.current === 2) {
         setShowProfileModal(true);
       }
-      setClickCount(0);
-    }, 450);
+      clickCountRef.current = 0;
+    }, 380);
+  };
+
+  // Avatar inside the opened profile modal can also trigger admin configuration if triple-clicked
+  const modalAvatarClicksRef = useRef<number>(0);
+  const modalAvatarTimeoutRef = useRef<any>(null);
+
+  const handleModalAvatarClick = () => {
+    modalAvatarClicksRef.current += 1;
+    if (modalAvatarTimeoutRef.current) clearTimeout(modalAvatarTimeoutRef.current);
+
+    if (modalAvatarClicksRef.current >= 3) {
+      modalAvatarClicksRef.current = 0;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate([40, 40, 40]);
+        } catch (e) {}
+      }
+      setShowProfileModal(false);
+      onOpenEditModal();
+    } else {
+      modalAvatarTimeoutRef.current = setTimeout(() => {
+        modalAvatarClicksRef.current = 0;
+      }, 420);
+    }
+  };
+
+  const handleCopyAccountInfo = () => {
+    const info = `Nu Pagamentos S.A. (260) • Agência ${appData.agency || '0001'} • Conta ${appData.accountNumber || '79827260-9'}`;
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(info).catch(() => {});
+    }
+    setToastMessage("Dados da conta copiados!");
+    setTimeout(() => setToastMessage(null), 2500);
   };
 
   const formattedBalance = Number(appData.balance).toLocaleString('pt-BR', {
@@ -90,6 +146,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full w-full bg-white select-none overflow-y-auto pb-16">
+      {/* Toast Feedback */}
+      {toastMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="fixed top-6 left-1/2 -translate-x-1/2 z-60 bg-neutral-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center gap-2 backdrop-blur-xs"
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{toastMessage}</span>
+        </motion.div>
+      )}
+
       {/* Header PJ Purple Zone with Safe Area Top */}
       <div 
         className="bg-[#5f259f] text-white pb-6 px-5 transition-all"
@@ -97,24 +166,25 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       >
         {/* Top Header Icons */}
         <div className="flex items-center justify-between">
-          <div className="relative">
+          <div className="flex items-center gap-2.5">
+            {/* Store Icon with subtle dot */}
+            <div 
+              className="relative w-11 h-11 rounded-2xl bg-white/15 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-colors cursor-pointer text-white"
+              title="Minha loja PJ"
+            >
+              <Store className="w-5 h-5 text-white/90" />
+              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-white/70" />
+            </div>
+
+            {/* Profile Avatar Button */}
             <button
               id="btn-home-profile"
               onClick={handleLeftMenuClick}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs font-bold text-sm"
-              aria-label="Perfil do usuário ou clique 3x para editar"
-              title="Clique 3x para abrir o menu de edição"
+              className="w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs font-bold text-sm text-white"
+              aria-label="Perfil do usuário"
+              title="Toque para abrir perfil • Toque 3x para configurações"
             >
-              {appData.userInitials ? (
-                <span>{appData.userInitials}</span>
-              ) : (
-                <User className="w-5 h-5 text-white" />
-              )}
-              {clickCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-amber-400 text-neutral-900 text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center animate-bounce">
-                  {clickCount}
-                </span>
-              )}
+              <User className="w-5 h-5 text-white" />
             </button>
           </div>
 
@@ -134,6 +204,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               aria-label="Ajuda"
             >
               <HelpCircle className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => alert("Convide sócios ou envie convite Nu")}
+              className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors cursor-pointer text-white"
+              aria-label="Convidar"
+            >
+              <UserPlus className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -472,63 +549,174 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
       </div>
 
-      {/* User Profile Modal */}
+      {/* User Profile Modal - Authentic Nubank PJ Drawer */}
       {showProfileModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-[2px]">
           <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            initial={{ opacity: 0, y: "100%" }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-6 text-neutral-900 shadow-xl"
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="bg-white rounded-t-[28px] sm:rounded-3xl w-full max-w-md pt-5 pb-6 px-6 text-neutral-900 shadow-2xl overflow-y-auto max-h-[92vh]"
           >
-            <div className="flex justify-between items-center pb-4 border-b border-neutral-100">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-[#5f259f] text-white flex items-center justify-center font-bold text-lg">
-                  {appData.userInitials}
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">{appData.userName}</h4>
-                  <p className="text-xs text-neutral-500">
-                    Ag {appData.agency} • C/C {appData.accountNumber}
-                  </p>
-                </div>
-              </div>
+            {/* Top Icons Bar */}
+            <div className="flex items-center justify-between pb-2">
               <button
                 id="btn-close-profile-modal"
                 onClick={() => setShowProfileModal(false)}
-                className="w-9 h-9 rounded-full bg-neutral-100 hover:bg-neutral-200 active:scale-95 flex items-center justify-center text-neutral-600 font-bold transition-all cursor-pointer"
-                aria-label="Fechar perfil"
+                className="w-10 h-10 -ml-2 rounded-full hover:bg-neutral-100 active:scale-95 flex items-center justify-center text-neutral-900 transition-all cursor-pointer"
+                aria-label="Fechar"
               >
-                ✕
+                <X className="w-6 h-6 stroke-[2]" />
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => alert("Modo apresentação / tela externa")}
+                  className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-900 transition-colors cursor-pointer"
+                  aria-label="Modo monitor"
+                >
+                  <Monitor className="w-5 h-5 stroke-[1.8]" />
+                </button>
+
+                <button
+                  onClick={() => alert("Configurações do aplicativo")}
+                  className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-900 transition-colors cursor-pointer"
+                  aria-label="Opções"
+                >
+                  <Hexagon className="w-5 h-5 stroke-[1.8]" />
+                </button>
+
+                <div className="relative">
+                  <button
+                    onClick={() => alert("Notificações da conta")}
+                    className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-900 transition-colors cursor-pointer"
+                    aria-label="Notificações"
+                  >
+                    <Bell className="w-5 h-5 stroke-[1.8]" />
+                  </button>
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#820AD1]" />
+                </div>
+              </div>
             </div>
 
-            <div className="py-4 space-y-2.5 text-xs text-neutral-700">
-              <div className="p-3 bg-neutral-50 rounded-xl">
-                <p className="font-semibold text-neutral-900">Empresa Cadastrada</p>
-                <p className="text-neutral-500 mt-0.5">{appData.companyName}</p>
-                <p className="text-neutral-400 text-[10px]">CNPJ: {appData.cnpj}</p>
+            {/* Profile Info Header */}
+            <div className="flex items-center gap-3.5 mt-2">
+              <div 
+                onClick={handleModalAvatarClick}
+                className="relative w-14 h-14 rounded-full bg-[#f0f1f5] flex items-center justify-center text-neutral-700 shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
+                title="Avatar • Toque 3x para configurações do administrador"
+              >
+                <ImageIcon className="w-6 h-6 stroke-[1.7] text-neutral-700" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-white border border-neutral-300 flex items-center justify-center shadow-2xs">
+                  <Pencil className="w-2.5 h-2.5 text-neutral-700 stroke-[2.5]" />
+                </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setShowProfileModal(false);
-                  onOpenEditModal();
-                }}
-                className="w-full text-center py-3 text-purple-700 font-bold bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <Sliders className="w-4 h-4" />
-                <span>Abrir Editor Completo</span>
-              </button>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base sm:text-[17px] font-bold text-neutral-900 tracking-tight leading-snug truncate">
+                  {appData.companyName || 'Rafa Arts Graphics'}
+                </h3>
+                <p className="text-[13px] text-neutral-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
+                  <span>Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '79827260-9'}</span>
+                  <button
+                    onClick={handleCopyAccountInfo}
+                    className="text-[#820AD1] font-semibold hover:underline cursor-pointer ml-0.5"
+                  >
+                    Mais
+                  </button>
+                </p>
+              </div>
+            </div>
 
-              <button
+            {/* Acesso Compartilhado PJ Card */}
+            <div 
+              id="btn-profile-shared-access"
+              onClick={() => alert("Acesso Compartilhado PJ: gerencie sócios e colaboradores")}
+              className="mt-6 p-4 rounded-2xl bg-[#f5f5f7] hover:bg-[#ebebed] active:scale-[0.99] flex items-center gap-3.5 cursor-pointer transition-all"
+            >
+              <Users className="w-5 h-5 text-neutral-900 stroke-[1.8]" />
+              <span className="text-[15px] font-semibold text-neutral-900">Acesso Compartilhado PJ</span>
+            </div>
+
+            {/* Outras contas pessoais Section */}
+            <div className="mt-6">
+              <p className="text-[13px] text-neutral-500 font-normal mb-2 px-1">
+                Outras contas pessoais
+              </p>
+
+              {/* User personal account */}
+              <div 
+                onClick={() => alert(`Acessando conta pessoal de ${appData.userName || 'Rafael Tavares Matos'}`)}
+                className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-[#f0f1f5] flex items-center justify-center text-neutral-900 shrink-0">
+                    <User className="w-5 h-5 stroke-[1.8]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-bold text-neutral-900 leading-tight truncate">
+                      {appData.userName || 'Rafael Tavares Matos'}
+                    </p>
+                    <p className="text-[12px] text-neutral-500 mt-0.5">Conta pessoal</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-neutral-900 stroke-[1.8] shrink-0" />
+              </div>
+
+              {/* Switch account */}
+              <div 
+                onClick={() => alert("Trocar conta: funcionalidade para contas internacionais Nu.")}
+                className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-11 h-11 rounded-full bg-purple-100/70 flex items-center justify-center text-[#820AD1] shrink-0">
+                    <RotateCcw className="w-5 h-5 stroke-[1.8]" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[15px] font-bold text-neutral-900 leading-tight">
+                      Trocar conta
+                    </p>
+                    <p className="text-[12px] text-neutral-500 mt-0.5">Contas de outros países</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Logout / Exit */}
+              <div 
+                id="btn-profile-logout"
                 onClick={() => {
                   setShowProfileModal(false);
                   onNavigate('Login');
                 }}
-                className="w-full text-center py-3 text-red-600 font-semibold bg-red-50 hover:bg-red-100 rounded-xl transition-colors"
+                className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
               >
-                Bloquear app / Sair
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-full bg-[#f0f1f5] flex items-center justify-center text-neutral-900 shrink-0">
+                    <CornerUpLeft className="w-5 h-5 stroke-[1.8]" />
+                  </div>
+                  <div>
+                    <p className="text-[15px] font-bold text-neutral-900 leading-tight">
+                      Sair do aplicativo
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer: Avalie esta tela */}
+            <div className="mt-8 flex flex-col items-center justify-center">
+              <button
+                onClick={() => {
+                  setToastMessage("Obrigado por avaliar nossa tela!");
+                  setTimeout(() => setToastMessage(null), 2500);
+                }}
+                className="flex items-center gap-2 text-[#820AD1] hover:text-[#6f09b5] font-semibold text-sm cursor-pointer transition-colors"
+              >
+                <Heart className="w-4 h-4 text-[#820AD1] stroke-[2]" />
+                <span>Avalie esta tela</span>
               </button>
+              <div className="w-36 h-1 bg-black rounded-full mx-auto mt-6 mb-1" />
             </div>
           </motion.div>
         </div>

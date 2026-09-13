@@ -247,12 +247,12 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
 ];
 
 export const DEFAULT_APP_DATA: AppCustomData = {
-  userName: '',
-  userInitials: '',
-  agency: '',
-  accountNumber: '',
-  companyName: '',
-  cnpj: '',
+  userName: 'Rafael Tavares Matos',
+  userInitials: 'RT',
+  agency: '0001',
+  accountNumber: '79827260-9',
+  companyName: 'Rafa Arts Graphics',
+  cnpj: '28.884.125/0001-40',
   accountTitle: 'Conta Nu Empresas',
 
   // Senha de acesso definida inicialmente vazia até ser configurada pelo usuário

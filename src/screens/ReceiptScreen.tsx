@@ -66,7 +66,7 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
     : (appData.companyName || appData.userName || 'TITULAR DA CONTA');
   const payerInstitution = 'NU PAGAMENTOS - IP';
   const payerAgency = appData.agency || '0001';
-  const payerAccount = appData.accountNumber || '00000000-0';
+  const payerAccount = appData.accountNumber || '79827260-9';
   const payerCnpj = appData.cnpj?.replace(/\D/g, '') || '';
   const payerCpfMasked = appData.cnpj ? appData.cnpj : '***.000.000-**';
 

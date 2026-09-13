@@ -152,9 +152,8 @@ export const SelectRecipientScreen: React.FC<SelectRecipientScreenProps> = ({
       setExtractedRecipient(extracted);
       setIsReceiptModalOpen(true);
     } catch (err) {
-      console.warn('Receipt parsing error, fallback to sample data:', err);
-      setExtractedRecipient(getSampleReceiptData());
-      setIsReceiptModalOpen(true);
+      console.warn('Receipt parsing error:', err);
+      showToast('Não foi possível ler os dados do comprovante. Tente novamente ou digite os dados.');
     } finally {
       setIsProcessingReceipt(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

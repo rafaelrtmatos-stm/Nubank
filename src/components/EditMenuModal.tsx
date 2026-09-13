@@ -22,7 +22,9 @@ import {
   Smartphone,
   CheckCircle2,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Dices,
+  Building2
 } from 'lucide-react';
 import { AppCustomData, Transaction, Contact } from '../types';
 import { INITIAL_CONTACTS } from '../data/mockData';
@@ -32,6 +34,10 @@ import {
   requestNativeNotificationPermission, 
   NotificationPermissionState 
 } from '../utils/nativeNotification';
+import { 
+  generateRandomBankAccount, 
+  generateRandomAccountNumber 
+} from '../utils/bankGenerator';
 
 interface EditMenuModalProps {
   isOpen: boolean;
@@ -837,24 +843,94 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                   />
                 </div>
 
-                <div>
-                  <label className="font-semibold text-neutral-700 block mb-1">Agência</label>
-                  <input
-                    type="text"
-                    value={formData.agency}
-                    onChange={(e) => handleChange('agency', e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 focus:outline-none focus:border-[#820AD1]"
-                  />
-                </div>
+                <div className="col-span-1 md:col-span-2 bg-purple-50/60 p-3.5 rounded-2xl border border-purple-200/80">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-[#820AD1] text-white flex items-center justify-center shrink-0">
+                        <Building2 className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-neutral-900 text-xs block">
+                          Agência e Conta Corrente
+                        </span>
+                        <span className="text-[11px] text-neutral-500">
+                          Edite manualmente ou gere números aleatórios com 1 clique
+                        </span>
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="font-semibold text-neutral-700 block mb-1">Conta Corrente</label>
-                  <input
-                    type="text"
-                    value={formData.accountNumber}
-                    onChange={(e) => handleChange('accountNumber', e.target.value)}
-                    className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 focus:outline-none focus:border-[#820AD1]"
-                  />
+                    {/* Quick generator buttons */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <button
+                        type="button"
+                        id="btn-editmenu-random-account"
+                        onClick={() => {
+                          const { agency, accountNumber } = generateRandomBankAccount(true);
+                          handleChange('agency', agency);
+                          handleChange('accountNumber', accountNumber);
+                        }}
+                        className="px-2.5 py-1.5 bg-[#820AD1] hover:bg-[#6f09b5] active:scale-95 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+                        title="Gerar agência e conta aleatórias instantaneamente"
+                      >
+                        <Dices className="w-3.5 h-3.5" />
+                        <span>🎲 Gerar Aleatório</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        id="btn-editmenu-new-account"
+                        onClick={() => {
+                          handleChange('accountNumber', generateRandomAccountNumber());
+                        }}
+                        className="px-2.5 py-1.5 bg-white hover:bg-purple-100 active:scale-95 text-[#820AD1] border border-purple-200 rounded-xl text-xs font-bold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="Gerar apenas nova conta aleatória"
+                      >
+                        Nova Conta
+                      </button>
+
+                      <button
+                        type="button"
+                        id="btn-editmenu-nu-agency"
+                        onClick={() => {
+                          handleChange('agency', '0001');
+                        }}
+                        className="px-2.5 py-1.5 bg-white hover:bg-neutral-100 active:scale-95 text-neutral-700 border border-neutral-200 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                        title="Definir agência padrão Nubank (0001)"
+                      >
+                        Ag 0001
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="font-semibold text-neutral-700 block mb-1 text-xs">
+                        Agência (Manual)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.agency}
+                        onChange={(e) => handleChange('agency', e.target.value)}
+                        placeholder="0001"
+                        maxLength={6}
+                        className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#820AD1]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-semibold text-neutral-700 block mb-1 text-xs">
+                        Conta Corrente (Manual)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.accountNumber}
+                        onChange={(e) => handleChange('accountNumber', e.target.value)}
+                        placeholder="79827260-9"
+                        maxLength={15}
+                        className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#820AD1]"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

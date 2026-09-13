@@ -1,5 +1,6 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import jsQR from 'jsqr';
+import Tesseract from 'tesseract.js';
 import { Contact } from '../types';
 
 // Configure pdfjs worker
@@ -129,13 +130,13 @@ export function getSampleReceiptData(): ExtractedRecipientData {
 export async function extractRecipientFromReceipt(file: File): Promise<ExtractedRecipientData> {
   const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
 
-  // 1. Try Gemini Flash multimodal AI extraction via /api/extract-receipt with ultra-fast compressed payload
+  // 1. Try Gemini Multimodal AI extraction via /api/extract-receipt
   try {
     const { base64Data, mimeType } = await prepareImageForFastUpload(file);
 
-    // 3.5s timeout controller so user never waits long
+    // 15s timeout controller so image upload + Gemini multimodal vision inference completes comfortably
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     const res = await fetch('/api/extract-receipt', {
       method: 'POST',
@@ -165,15 +166,15 @@ export async function extractRecipientFromReceipt(file: File): Promise<Extracted
           document: d.document || '***.***.***-**',
           institution: d.institution || 'Nu Pagamentos S.A.',
           accountType: d.accountType || 'Conta de pagamentos',
-          agency: d.agency || '0001',
+          agency: d.agency || '',
           account: d.account || '',
           pixKey: d.pixKey || '',
           amount: typeof d.amount === 'number' ? d.amount : parseFloat(String(d.amount || 0)) || 0,
           date: d.date || '',
-          transactionId: d.transactionId,
-          payerName: d.payerName,
-          payerDocument: d.payerDocument,
-          payerInstitution: d.payerInstitution,
+          transactionId: d.transactionId || '',
+          payerName: d.payerName || '',
+          payerDocument: d.payerDocument || '',
+          payerInstitution: d.payerInstitution || '',
           rawText: JSON.stringify(d),
         };
       }
@@ -182,7 +183,7 @@ export async function extractRecipientFromReceipt(file: File): Promise<Extracted
     console.warn('API receipt extraction notice, proceeding with local parsing:', apiErr);
   }
 
-  // 2. Fallback to local parsing (PDF.js text parse or image QR / template)
+  // 2. Fallback to local parsing (PDF.js text parse or image OCR)
   if (isPdf) {
     return extractFromPdfReceipt(file);
   } else {
@@ -231,54 +232,80 @@ async function extractFromPdfReceipt(file: File): Promise<ExtractedRecipientData
 }
 
 /**
- * Extracts recipient from Image file (looks for QR code or smart fallback)
+ * Extracts recipient from Image file using QR decoding and Tesseract OCR
  */
 async function extractFromImageReceipt(file: File): Promise<ExtractedRecipientData> {
-  return new Promise((resolve) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth || img.width;
-        canvas.height = img.naturalHeight || img.height;
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        if (ctx) {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-          // Try jsQR
-          const code = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: 'dontInvert',
-          });
-
-          if (code && code.data) {
-            URL.revokeObjectURL(url);
-            const qrParsed = parsePixQrCodeString(code.data);
-            if (qrParsed.name || qrParsed.pixKey) {
-              resolve(qrParsed);
+  // First, check for Pix QR code in image
+  try {
+    const qrData = await new Promise<string | null>((resolve) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width;
+          canvas.height = img.naturalHeight || img.height;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: 'dontInvert',
+            });
+            if (code && code.data) {
+              resolve(code.data);
               return;
             }
           }
+        } catch (e) {
+          // ignore
         }
-      } catch (err) {
-        console.warn('Image QR parse error:', err);
+        resolve(null);
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      img.src = url;
+    });
+
+    if (qrData) {
+      const qrParsed = parsePixQrCodeString(qrData);
+      if (qrParsed.name || qrParsed.pixKey) {
+        return qrParsed;
       }
+    }
+  } catch (qrErr) {
+    console.warn('QR code check notice:', qrErr);
+  }
 
-      URL.revokeObjectURL(url);
-      // If no QR was found and AI offline, resolve with the typical Nubank receipt details
-      resolve(getSampleReceiptData());
-    };
+  // Second: Run local Tesseract.js OCR directly on the image file
+  try {
+    console.log('[Receipt Parser] Executando OCR Tesseract local no comprovante...');
+    const ocrResult = await Tesseract.recognize(file, 'por');
+    const text = ocrResult?.data?.text || '';
+    if (text && text.trim().length > 10) {
+      const parsed = parseTransferReceiptText(text);
+      if (parsed && parsed.name && parsed.name.trim().length > 2 && parsed.name !== 'Destinatário Pix QR Code') {
+        console.log('[Receipt Parser] OCR local encontrou recebedor com sucesso:', parsed.name);
+        return parsed;
+      }
+    }
+  } catch (ocrErr) {
+    console.warn('[Receipt Parser] Erro no Tesseract OCR local:', ocrErr);
+  }
 
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      resolve(getSampleReceiptData());
-    };
-
-    img.src = url;
-  });
+  // If both vision API and local OCR were unable to read a valid name, return a neutral fallback (NEVER fake name like Ingrid)
+  return {
+    name: 'Destinatário do Comprovante',
+    initials: 'DC',
+    document: '***.***.***-**',
+    institution: 'Nu Pagamentos S.A.',
+    accountType: 'Conta de pagamentos',
+    amount: 0,
+    rawText: 'Não foi possível ler o texto do comprovante automaticamente. Por favor, verifique ou preencha os dados.',
+  };
 }
 
 /**
