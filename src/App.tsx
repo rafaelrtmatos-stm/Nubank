@@ -15,10 +15,18 @@ import { TransferScreen } from './screens/TransferScreen';
 import { ConfirmTransferScreen } from './screens/ConfirmTransferScreen';
 import { ReceiptScreen } from './screens/ReceiptScreen';
 import { ScanQrCodeScreen } from './screens/ScanQrCodeScreen';
+import { ExtratoScreen } from './screens/ExtratoScreen';
 import { EditMenuModal } from './components/EditMenuModal';
 import { PixPushNotification } from './components/PixPushNotification';
 import { AppCustomData, Contact, ScreenName, Transaction, TransferData, ActivePixNotification } from './types';
-import { DEFAULT_APP_DATA, INITIAL_TRANSACTIONS, INITIAL_CONTACTS } from './data/mockData';
+import { 
+  DEFAULT_APP_DATA, 
+  INITIAL_TRANSACTIONS, 
+  INITIAL_CONTACTS,
+  generateFreshAppData,
+  generateRandomContacts,
+  generateRandomTransactions
+} from './data/mockData';
 import { playPixNotificationSound } from './utils/audio';
 import { 
   showNativeSystemNotification, 
@@ -26,7 +34,7 @@ import {
 } from './utils/nativeNotification';
 import { CheckCircle2, Sliders, Edit3, ArrowDownLeft } from 'lucide-react';
 
-const STORAGE_KEY = 'nu_empresas_custom_data_v2';
+const STORAGE_KEY = 'nu_empresas_custom_data_v3';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('Splash');
@@ -38,32 +46,40 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        // Ensure the app always has at least 10 transactions
+        
+        // Se houver dados legados com nomes anteriores estáticos, renova com nomes aleatórios
+        const legacyNames = ['Josiane', 'Uclebson', 'Geo Florestal', 'Elicleia', 'Distribuidora de Bebidas Brasil', 'Mercado & Conveniência Silva', 'Enel Distribuição São Paulo'];
+        const hasLegacy = (Array.isArray(parsed.contacts) && parsed.contacts.some((c: any) => legacyNames.some(ln => c.name?.includes(ln)))) ||
+                          (Array.isArray(parsed.transactions) && parsed.transactions.some((t: any) => legacyNames.some(ln => t.subtitle?.includes(ln))));
+
+        if (hasLegacy) {
+          const fresh = generateFreshAppData();
+          return {
+            ...fresh,
+            ...parsed,
+            contacts: fresh.contacts,
+            transactions: fresh.transactions,
+          };
+        }
+
+        // Garante pelo menos 10 transações
         let loadedTransactions: Transaction[] = [];
         if (Array.isArray(parsed.transactions) && parsed.transactions.length >= 10) {
           loadedTransactions = parsed.transactions;
-        } else if (Array.isArray(parsed.transactions) && parsed.transactions.length > 0) {
-          const existingIds = new Set(parsed.transactions.map((t: Transaction) => t.id));
-          const missing = INITIAL_TRANSACTIONS.filter((t) => !existingIds.has(t.id));
-          loadedTransactions = [...parsed.transactions, ...missing];
         } else {
-          loadedTransactions = INITIAL_TRANSACTIONS;
+          loadedTransactions = generateRandomTransactions(14);
         }
 
-        // Ensure the app always has at least 8 contacts
+        // Garante pelo menos 8 contatos
         let loadedContacts: Contact[] = [];
         if (Array.isArray(parsed.contacts) && parsed.contacts.length >= 8) {
           loadedContacts = parsed.contacts;
-        } else if (Array.isArray(parsed.contacts) && parsed.contacts.length > 0) {
-          const existingIds = new Set(parsed.contacts.map((c: Contact) => c.id));
-          const missing = INITIAL_CONTACTS.filter((c) => !existingIds.has(c.id));
-          loadedContacts = [...parsed.contacts, ...missing];
         } else {
-          loadedContacts = INITIAL_CONTACTS;
+          loadedContacts = generateRandomContacts(12);
         }
 
         return {
-          ...DEFAULT_APP_DATA,
+          ...generateFreshAppData(),
           ...parsed,
           contacts: loadedContacts,
           transactions: loadedTransactions,
@@ -72,7 +88,7 @@ export default function App() {
     } catch (e) {
       console.error('Error loading saved data from localStorage', e);
     }
-    return DEFAULT_APP_DATA;
+    return generateFreshAppData();
   });
 
   const [isBalanceVisible, setIsBalanceVisible] = useState<boolean>(true);
@@ -136,11 +152,12 @@ export default function App() {
   };
 
   const handleResetData = () => {
-    setAppData(DEFAULT_APP_DATA);
+    const fresh = generateFreshAppData();
+    setAppData(fresh);
     setIsBalanceVisible(true);
     setSkipIntro(false);
     localStorage.removeItem(STORAGE_KEY);
-    showToast('Dados zerados com sucesso. O aplicativo está no estado virgem!');
+    showToast('Dados restaurados com novo extrato e contatos exclusivos!');
   };
 
   // Trigger Pix Receive Simulation
@@ -523,6 +540,28 @@ export default function App() {
               />
             </motion.div>
           )}
+          {currentScreen === 'Extrato' && (
+            <motion.div
+              key="extrato"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.2 }}
+              className="w-full h-full flex-1"
+            >
+              <ExtratoScreen
+                appData={appData}
+                isBalanceVisible={isBalanceVisible}
+                onToggleBalance={() => setIsBalanceVisible(!isBalanceVisible)}
+                onGoBack={goBack}
+                onNavigate={(screen) => navigateTo(screen)}
+                onViewReceipt={(transfer) => {
+                  setActiveTransfer(transfer);
+                  navigateTo('Receipt');
+                }}
+              />
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
 
@@ -531,12 +570,8 @@ export default function App() {
         notification={activePixNotification}
         onDismiss={() => setActivePixNotification(null)}
         onClickNotification={() => {
-          navigateTo('Home');
+          navigateTo('Extrato');
           setActivePixNotification(null);
-          setTimeout(() => {
-            const el = document.getElementById('recent-activity-section');
-            el?.scrollIntoView({ behavior: 'smooth' });
-          }, 200);
         }}
       />
 

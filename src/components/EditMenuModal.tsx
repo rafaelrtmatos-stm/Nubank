@@ -27,7 +27,7 @@ import {
   Building2
 } from 'lucide-react';
 import { AppCustomData, Transaction, Contact } from '../types';
-import { INITIAL_CONTACTS } from '../data/mockData';
+import { INITIAL_CONTACTS, generateRandomContacts, generateRandomTransactions } from '../data/mockData';
 import { parseCurrency, formatCurrencyBRL } from '../utils/currencyUtils';
 import { 
   getNativeNotificationPermission, 
@@ -1043,14 +1043,26 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
           {activeTab === 'history' && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="font-bold text-neutral-800">Transações do Histórico</p>
-                <button
-                  type="button"
-                  onClick={handleAddTx}
-                  className="flex items-center gap-1 text-xs font-bold text-[#820AD1] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Adicionar
-                </button>
+                <p className="font-bold text-neutral-800">Transações do Histórico ({formData.transactions.length})</p>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleChange('transactions', generateRandomTransactions(14));
+                    }}
+                    className="flex items-center gap-1 text-[11px] font-bold text-neutral-600 hover:text-[#820AD1] bg-neutral-100 hover:bg-purple-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    title="Gera transações novas e totalmente aleatórias"
+                  >
+                    <Dices className="w-3.5 h-3.5" /> Gerar Novos Aleatórios
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddTx}
+                    className="flex items-center gap-1 text-xs font-bold text-[#820AD1] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Adicionar
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2.5 max-h-[350px] overflow-y-auto pr-1">
@@ -1186,11 +1198,12 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      handleChange('contacts', INITIAL_CONTACTS);
+                      handleChange('contacts', generateRandomContacts(12));
                     }}
-                    className="text-[11px] font-bold text-neutral-600 hover:text-[#820AD1] bg-neutral-100 hover:bg-purple-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    className="flex items-center gap-1 text-[11px] font-bold text-neutral-600 hover:text-[#820AD1] bg-neutral-100 hover:bg-purple-50 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    title="Gera contatos novos e totalmente aleatórios"
                   >
-                    Restaurar Lista Padrão
+                    <Dices className="w-3.5 h-3.5" /> Gerar Novos Aleatórios
                   </button>
                   <button
                     type="button"

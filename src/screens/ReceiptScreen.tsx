@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toPng, toBlob } from 'html-to-image';
 import { TransferData, AppCustomData } from '../types';
+import { NuReceiptLogo } from '../components/NuReceiptLogo';
 
 interface ReceiptScreenProps {
   transferData: TransferData;
@@ -238,14 +239,9 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
             transition={{ duration: 0.2 }}
             className="px-6 pt-6 pb-2"
           >
-            {/* Header with Nu Logo + Verified Badge */}
-            <div className="flex items-center gap-1.5 mb-6">
-              <div className="flex items-center">
-                <img src="/nu-logo.png" alt="Nubank" className="w-7 h-7 rounded-md" />
-              </div>
-              <div className="w-4 h-4 rounded-full bg-neutral-700 text-white flex items-center justify-center -mt-1 ml-0.5">
-                <Check className="w-2.5 h-2.5 stroke-[3]" />
-              </div>
+            {/* Header with Nu Logo + Verified Badge (Monochrome dark, matching official Nubank receipts) */}
+            <div className="mb-6">
+              <NuReceiptLogo size="md" />
             </div>
 
             {/* Title and Date */}
@@ -380,26 +376,23 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                       </div>
                     )}
 
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-900 font-normal">Agência</span>
-                      <span className="text-neutral-900 font-normal text-right">
-                        {destAgency}
-                      </span>
-                    </div>
+                    {recipient.account && recipient.account !== '00000000-0' && (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="text-neutral-900 font-normal">Agência</span>
+                          <span className="text-neutral-900 font-normal text-right">
+                            {destAgency}
+                          </span>
+                        </div>
 
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-900 font-normal">Conta</span>
-                      <span className="text-neutral-900 font-normal text-right">
-                        {destAccount}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between items-center">
-                      <span className="text-neutral-900 font-normal">Tipo de conta</span>
-                      <span className="text-neutral-900 font-normal text-right">
-                        {destAccountType}
-                      </span>
-                    </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-neutral-900 font-normal">Conta</span>
+                          <span className="text-neutral-900 font-normal text-right">
+                            {destAccount}
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
@@ -417,19 +410,10 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
               <div className="space-y-4 text-[14px]">
                 <div className="flex justify-between items-start">
                   <span className="text-neutral-900 font-normal shrink-0">Nome</span>
-                  <span className="text-neutral-900 font-normal text-right max-w-[210px] uppercase leading-snug">
+                  <span className="text-neutral-900 font-normal text-right max-w-[210px] leading-snug">
                     {payerName}
                   </span>
                 </div>
-
-                {isBillPayment ? (
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-900 font-normal">CPF</span>
-                    <span className="text-neutral-900 font-normal text-right">
-                      {payerCpfMasked}
-                    </span>
-                  </div>
-                ) : null}
 
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-900 font-normal">Instituição</span>
@@ -439,27 +423,11 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">Agência</span>
+                  <span className="text-neutral-900 font-normal">{appData.cnpj ? 'CNPJ' : 'CPF'}</span>
                   <span className="text-neutral-900 font-normal text-right">
-                    {payerAgency}
+                    {appData.cnpj || payerCpfMasked || '...803.262-..'}
                   </span>
                 </div>
-
-                <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">Conta</span>
-                  <span className="text-neutral-900 font-normal text-right">
-                    {payerAccount}
-                  </span>
-                </div>
-
-                {!isBillPayment ? (
-                  <div className="flex justify-between items-center">
-                    <span className="text-neutral-900 font-normal">CNPJ</span>
-                    <span className="text-neutral-900 font-normal text-right">
-                      {payerCnpj}
-                    </span>
-                  </div>
-                ) : null}
               </div>
             </div>
           </motion.div>

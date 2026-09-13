@@ -1,295 +1,327 @@
 import { AppCustomData, Contact, Transaction } from '../types';
 
-export const INITIAL_CONTACTS: Contact[] = [
-  {
-    id: 'contact-mock-1',
-    name: 'Rafael Tavares Matos',
-    initials: 'RT',
-    document: '28.884.125/0001-40',
-    institution: 'Nu Pagamentos S.A.',
-    accountType: 'Conta de pagamentos',
-    pixKey: '+5593992112108',
-    agency: '0001',
-    account: '79827260-9',
-  },
-  {
-    id: 'contact-mock-2',
-    name: 'Josiane M Moreira Neves',
-    initials: 'JN',
-    document: '***.884.502-**',
-    institution: 'Banco do Brasil S.A.',
-    accountType: 'Conta Corrente',
-    pixKey: '884.502.138-00',
-    agency: '0256-9',
-    account: '29311-3',
-  },
-  {
-    id: 'contact-mock-3',
-    name: 'Uclebson Comércio de Eletrodomésticos Ltda',
-    initials: 'UC',
-    document: '13.729.129/0001-87',
-    institution: 'Banco Cooperativo Sicredi S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: 'financeiro@uclebson.com.br',
-    agency: '0818',
-    account: '66751-6',
-  },
-  {
-    id: 'contact-mock-4',
-    name: 'Imobiliária Geo Florestal Ltda',
-    initials: 'GF',
-    document: '60.659.875/0001-21',
-    institution: 'Banco Santander (Brasil) S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: '60.659.875/0001-21',
-    agency: '3412',
-    account: '13004821-5',
-  },
-  {
-    id: 'contact-mock-5',
-    name: 'Elicleia Solange do Nascimento',
-    initials: 'EN',
-    document: '•••.361.482-••',
-    institution: 'Nu Pagamentos S.A.',
-    accountType: 'Conta de pagamentos',
-    pixKey: 'elicleia.solange@gmail.com',
-    agency: '0001',
-    account: '54219803-1',
-  },
-  {
-    id: 'contact-mock-6',
-    name: 'Distribuidora de Bebidas Brasil Ltda',
-    initials: 'DB',
-    document: '12.345.678/0001-90',
-    institution: 'Itaú Unibanco S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: '12.345.678/0001-90',
-    agency: '1234',
-    account: '56789-0',
-  },
-  {
-    id: 'contact-mock-7',
-    name: 'Mercado & Conveniência Silva Ltda',
-    initials: 'MS',
-    document: '98.765.432/0001-10',
-    institution: 'Nu Pagamentos S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: '(11) 98765-4321',
-    agency: '0001',
-    account: '88231902-4',
-  },
-  {
-    id: 'contact-mock-8',
-    name: 'Carlos Eduardo Pereira',
-    initials: 'CP',
-    document: '***.412.879-**',
-    institution: 'Banco Bradesco S.A.',
-    accountType: 'Conta Corrente',
-    pixKey: 'carlos.pereira@consultoria.com.br',
-    agency: '1420',
-    account: '10982-3',
-  },
-  {
-    id: 'contact-mock-9',
-    name: 'Logística Express Transportes S.A.',
-    initials: 'LE',
-    document: '33.221.100/0001-55',
-    institution: 'Banco Inter S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
-    agency: '0001',
-    account: '1209348-7',
-  },
-  {
-    id: 'contact-mock-10',
-    name: 'Mariana Santos Almeida',
-    initials: 'MA',
-    document: '***.954.123-**',
-    institution: 'Caixa Econômica Federal',
-    accountType: 'Conta Poupança',
-    pixKey: '(21) 97654-3210',
-    agency: '0189',
-    account: '00049281-2',
-  },
-  {
-    id: 'contact-mock-11',
-    name: 'Papelaria & Suprimentos Central',
-    initials: 'PC',
-    document: '45.890.123/0001-77',
-    institution: 'Banco C6 S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: '45.890.123/0001-77',
-    agency: '0001',
-    account: '938102-4',
-  },
-  {
-    id: 'contact-mock-12',
-    name: 'Posto PetroSul Auto Center Ltda',
-    initials: 'PS',
-    document: '07.123.456/0001-88',
-    institution: 'Banco Santander (Brasil) S.A.',
-    accountType: 'Conta Corrente PJ',
-    pixKey: '07.123.456/0001-88',
-    agency: '0450',
-    account: '298104-6',
-  },
+// Diverse pool of modern Brazilian names (excluding previous static names)
+const FIRST_NAMES = [
+  'Gabriel', 'Matheus', 'Lucas', 'Felipe', 'Rodrigo', 'Bruno', 'Thiago', 'Guilherme',
+  'Leonardo', 'Gustavo', 'Rafael', 'Vinicius', 'Eduardo', 'André', 'Caio', 'Renan',
+  'Daniel', 'Marcelo', 'Fernando', 'Juliana', 'Camila', 'Beatriz', 'Larissa', 'Mariana',
+  'Amanda', 'Fernanda', 'Bruna', 'Carolina', 'Letícia', 'Natália', 'Jéssica', 'Patrícia',
+  'Vanessa', 'Renata', 'Tatiane', 'Aline', 'Priscila', 'Bianca', 'Luana', 'Lorena',
+  'Henrique', 'Vitor', 'Diego', 'Murilo', 'Samuel', 'Isabela', 'Helena', 'Clara'
 ];
 
-export const INITIAL_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-mock-1',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'Mercado & Conveniência Silva Ltda - Pix',
-    amount: 1250.00,
-    date: 'Hoje, 14:32',
-    category: 'Vendas',
-  },
-  {
-    id: 'tx-mock-2',
-    type: 'pix_send',
-    title: 'Transferência enviada',
-    subtitle: 'Distribuidora de Bebidas Brasil - Pix',
-    amount: -480.50,
-    date: 'Hoje, 11:15',
-    category: 'Fornecedores',
-  },
-  {
-    id: 'tx-mock-3',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'Mariana Souza Costa - Pix',
-    amount: 320.00,
-    date: 'Hoje, 09:40',
-    category: 'Recebimentos',
-  },
-  {
-    id: 'tx-mock-4',
-    type: 'bill_payment',
-    title: 'Pagamento de boleto',
-    subtitle: 'Enel Distribuição São Paulo',
-    amount: -285.90,
-    date: 'Ontem',
-    category: 'Contas e Serviços',
-  },
-  {
-    id: 'tx-mock-5',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'Carlos Eduardo Mendes - Pix',
-    amount: 850.00,
-    date: 'Ontem',
-    category: 'Serviços',
-  },
-  {
-    id: 'tx-mock-6',
-    type: 'card_expense',
-    title: 'Compra no cartão corporativo',
-    subtitle: 'Posto Ipiranga Combustíveis',
-    amount: -195.40,
-    date: '07 SET',
-    category: 'Transporte',
-  },
-  {
-    id: 'tx-mock-7',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'Studio Criativo Design Ltda - Pix',
-    amount: 2400.00,
-    date: '06 SET',
-    category: 'Consultoria',
-  },
-  {
-    id: 'tx-mock-8',
-    type: 'bill_payment',
-    title: 'Pagamento de boleto',
-    subtitle: 'Claro Brasil Telecomunicações',
-    amount: -149.90,
-    date: '05 SET',
-    category: 'Internet e Telefonia',
-  },
-  {
-    id: 'tx-mock-9',
-    type: 'pix_send',
-    title: 'Transferência enviada',
-    subtitle: 'Lucas Ferreira Consultoria - Pix',
-    amount: -750.00,
-    date: '04 SET',
-    category: 'Honorários',
-  },
-  {
-    id: 'tx-mock-10',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'Ana Beatriz Nogueira - Pix',
-    amount: 540.00,
-    date: '03 SET',
-    category: 'Vendas',
-  },
-  {
-    id: 'tx-mock-11',
-    type: 'card_expense',
-    title: 'Compra no cartão corporativo',
-    subtitle: 'Kalunga Papelaria e Informática',
-    amount: -329.80,
-    date: '02 SET',
-    category: 'Materiais de Escritório',
-  },
-  {
-    id: 'tx-mock-12',
-    type: 'pix_receive',
-    title: 'Transferência recebida',
-    subtitle: 'Restaurante Sabor Caseiro - Pix',
-    amount: 1180.00,
-    date: '01 SET',
-    category: 'Alimentação / Eventos',
-  },
+const LAST_NAMES = [
+  'Silva', 'Santos', 'Oliveira', 'Souza', 'Rodrigues', 'Ferreira', 'Alves', 'Pereira',
+  'Lima', 'Gomes', 'Costa', 'Ribeiro', 'Martins', 'Carvalho', 'Almeida', 'Lopes',
+  'Soares', 'Fernandes', 'Vieira', 'Barbosa', 'Rocha', 'Dias', 'Nascimento', 'Andrade',
+  'Moreira', 'Nunes', 'Marques', 'Machado', 'Mendes', 'Freitas', 'Cardoso', 'Ramos',
+  'Gonçalves', 'Santana', 'Teixeira', 'Moraes', 'Cavalcanti', 'Pinto', 'Castro', 'Azevedo'
 ];
 
-export const DEFAULT_APP_DATA: AppCustomData = {
-  userName: 'Rafael Tavares Matos',
-  userInitials: 'RT',
-  agency: '0001',
-  accountNumber: '79827260-9',
-  companyName: 'Rafa Arts Graphics',
-  cnpj: '28.884.125/0001-40',
-  accountTitle: 'Conta Nu Empresas',
+const COMPANY_PREFIXES = [
+  'Aurora', 'Inovare', 'Vanguard', 'Aliança', 'Nexus', 'Ponto Certo', 'Triângulo',
+  'Delta', 'Conecta', 'BioTech', 'Terra Viva', 'Lumina', 'Global Log', 'Realize',
+  'Sinergia', 'Ápice', 'Valle', 'Prime Sul', 'Alfa', 'Nova Era', 'Horizonte', 'Omni'
+];
 
-  // Senha de acesso definida inicialmente vazia até ser configurada pelo usuário
-  accessPin: '',
+const COMPANY_SECTORS = [
+  'Alimentos e Bebidas', 'Soluções Digitais', 'Consultoria Empresarial', 'Peças e Acessórios',
+  'Engenharia e Projetos', 'Comunicação Visual', 'Transportes e Logística', 'Clínica e Diagnósticos',
+  'Contabilidade e Finanças', 'Comércio Atacadista', 'Farmácia e Drogaria', 'Restaurante e Gastronomia',
+  'Materiais de Construção', 'Assessoria Jurídica', 'Distribuidora', 'Serviços Médicos'
+];
 
-  balance: 0,
-  creditCardLimit: 'R$ 0,00',
-  loanLimit: 'R$ 0',
+const COMPANY_SUFFIXES = ['Ltda', 'S.A.', 'ME', 'EPP'];
 
-  showReminder: false,
-  reminderTitle: '',
-  reminderSubtitle: '',
-  bannerTitle: '',
-  bannerSubtitle: '',
+const INSTITUTIONS = [
+  'Nu Pagamentos S.A.',
+  'Nu Pagamentos - IP',
+  'Banco Itaú Unibanco S.A.',
+  'Banco Bradesco S.A.',
+  'Banco do Brasil S.A.',
+  'Banco Santander (Brasil) S.A.',
+  'Banco Inter S.A.',
+  'Banco C6 S.A.',
+  'Caixa Econômica Federal',
+  'Mercado Pago IP Ltda',
+  'Banco Cooperativo Sicredi S.A.',
+  'PicPay Serviços S.A.',
+  'Banco BTG Pactual S.A.',
+  'Banco PagBank S.A.'
+];
 
-  defaultRecipientName: '',
-  defaultRecipientInitials: '',
-  defaultRecipientDoc: '',
-  defaultRecipientInstitution: '',
-  defaultRecipientAccountType: '',
-  defaultTransferAmount: 0,
+const UTILITY_COMPANIES = [
+  'Enel Distribuição de Energia',
+  'Sabesp Saneamento Básico',
+  'Comgás Companhia de Gás',
+  'Claro Brasil Telecomunicações',
+  'Vivo Telefônica Brasil S.A.',
+  'CPFL Energia Paulista',
+  'Light Serviços de Eletricidade',
+  'Copel Distribuição Paraná',
+  'Cemig Distribuição S.A.',
+  'DAS Simples Nacional da Receita',
+  'Condomínio Empresarial Corporate Tower',
+  'Localiza Gestão de Frotas'
+];
 
-  loginTitle: 'Queremos deixar seu roxinho ainda mais protegido. Por isso, sempre vamos pedir uma senha para acessar o aplicativo.',
-  loginButtonText: 'Criar senha de acesso',
-  loginHelperText: 'Essa senha será usada sempre que você abrir o app.',
-  skipIntroText: 'Pular esta explicação da próxima vez...',
+const CARD_MERCHANTS = [
+  'Posto Shell Combustíveis',
+  'Posto Ipiranga Auto Posto',
+  'Google Workspace GSuite',
+  'Amazon Web Services AWS',
+  'Mercado Livre Marketplace',
+  'Drogaria São Paulo Farmácia',
+  'Kalunga Papelaria e Suprimentos',
+  'Leroy Merlin Materiais',
+  'Supermercados Pão de Açúcar',
+  'Microsoft Cloud Subscriptions'
+];
 
-  // Configuração da Simulação Pix
-  simulatedPixSender: '',
-  simulatedPixAmount: 0,
-  simulatedPixBank: '',
-  simulatedPixMessage: '',
-  pixNotificationSound: true,
-  pixAutoCreditBalance: true,
+function pickRandom<T>(items: T[]): T {
+  return items[Math.floor(Math.random() * items.length)];
+}
 
-  contacts: INITIAL_CONTACTS,
-  transactions: INITIAL_TRANSACTIONS,
-};
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
+function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'NU';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
 
+function generateRandomCpfMasked(): string {
+  const n1 = randomInt(100, 999);
+  const n2 = randomInt(100, 999);
+  return `***.${n1}.${n2}-**`;
+}
+
+function generateRandomCnpj(): string {
+  const n1 = randomInt(10, 99);
+  const n2 = randomInt(100, 999);
+  const n3 = randomInt(100, 999);
+  const n4 = randomInt(10, 99);
+  return `${n1}.${n2}.${n3}/0001-${n4}`;
+}
+
+function generateRandomPhone(): string {
+  const ddd = pickRandom([11, 19, 21, 27, 31, 41, 47, 51, 61, 71, 81, 85, 91, 92, 98]);
+  const part1 = randomInt(91000, 99999);
+  const part2 = randomInt(1000, 9999);
+  return `(${ddd}) ${part1}-${part2}`;
+}
+
+function generateRandomPersonName(): string {
+  const first = pickRandom(FIRST_NAMES);
+  const mid = pickRandom(LAST_NAMES);
+  const last = pickRandom(LAST_NAMES);
+  return `${first} ${mid} ${last}`;
+}
+
+function generateRandomCompanyName(): string {
+  const prefix = pickRandom(COMPANY_PREFIXES);
+  const sector = pickRandom(COMPANY_SECTORS);
+  const suffix = pickRandom(COMPANY_SUFFIXES);
+  return `${prefix} ${sector} ${suffix}`;
+}
+
+/**
+ * Gera dinamicamente contatos brasileiros aleatórios e realistas.
+ * Nenhum contato é fixo, garantindo que cada usuário / primeiro acesso tenha contatos exclusivos.
+ */
+export function generateRandomContacts(count = 12): Contact[] {
+  const contacts: Contact[] = [];
+  const usedNames = new Set<string>();
+
+  for (let i = 0; i < count; i++) {
+    const isCompany = Math.random() > 0.45;
+    let name = '';
+    let attempts = 0;
+    do {
+      name = isCompany ? generateRandomCompanyName() : generateRandomPersonName();
+      attempts++;
+    } while (usedNames.has(name) && attempts < 10);
+    usedNames.add(name);
+
+    const institution = pickRandom(INSTITUTIONS);
+    const isNu = institution.toLowerCase().includes('nu');
+    const agency = isNu ? '0001' : `${randomInt(1000, 4500)}`;
+    const account = isNu
+      ? `${randomInt(10000000, 99999999)}-${randomInt(0, 9)}`
+      : `${randomInt(10000, 99999)}-${randomInt(0, 9)}`;
+
+    const keyType = randomInt(1, 4);
+    let pixKey = '';
+    if (keyType === 1) {
+      pixKey = generateRandomPhone();
+    } else if (keyType === 2) {
+      const cleanName = name.split(' ')[0].toLowerCase();
+      pixKey = `${cleanName}.${randomInt(10, 99)}@gmail.com`;
+    } else if (keyType === 3) {
+      pixKey = isCompany ? generateRandomCnpj() : generateRandomCpfMasked().replace(/\*/g, `${randomInt(1, 9)}`);
+    } else {
+      pixKey = `${Math.random().toString(36).substring(2, 10)}-${Math.random().toString(36).substring(2, 6)}-4${Math.random().toString(36).substring(2, 5)}`;
+    }
+
+    contacts.push({
+      id: `contact-dynamic-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 7)}`,
+      name,
+      initials: getInitials(name),
+      document: isCompany ? generateRandomCnpj() : generateRandomCpfMasked(),
+      institution,
+      accountType: isCompany ? 'Conta Corrente PJ' : pickRandom(['Conta Corrente', 'Conta de pagamentos', 'Conta Poupança']),
+      pixKey,
+      agency,
+      account,
+    });
+  }
+
+  return contacts;
+}
+
+/**
+ * Gera dinamicamente um histórico de extrato bancário realista e diversificado.
+ * Nenhum valor ou nome é fixo, garantindo extrato único a cada novo acesso.
+ */
+export function generateRandomTransactions(count = 14): Transaction[] {
+  const transactions: Transaction[] = [];
+
+  const timeTemplates = [
+    'Hoje, 15:42',
+    'Hoje, 14:18',
+    'Hoje, 11:35',
+    'Hoje, 09:20',
+    'Ontem, 18:40',
+    'Ontem, 16:15',
+    'Ontem, 10:05',
+    '07 SET',
+    '06 SET',
+    '05 SET',
+    '04 SET',
+    '03 SET',
+    '02 SET',
+    '01 SET',
+    '31 AGO',
+    '30 AGO'
+  ];
+
+  for (let i = 0; i < count; i++) {
+    const roll = Math.random();
+    const date = timeTemplates[i] || `${Math.max(1, 30 - i)} AGO`;
+    const uniqueId = `E${randomInt(100000, 999999)}20260907${randomInt(100000, 999999)}s${Math.random().toString(36).substring(2, 10)}`;
+
+    if (roll < 0.45) {
+      // Pix Recebido (Entrada positiva)
+      const sender = Math.random() > 0.4 ? generateRandomCompanyName() : generateRandomPersonName();
+      const amount = parseFloat((randomInt(80, 4500) + Math.random()).toFixed(2));
+      transactions.push({
+        id: uniqueId,
+        type: 'pix_receive',
+        title: 'Transferência recebida',
+        subtitle: `${sender} - Pix`,
+        amount,
+        date,
+        category: pickRandom(['Vendas', 'Serviços', 'Recebimentos Comerciais', 'Honorários']),
+      });
+    } else if (roll < 0.75) {
+      // Pix Enviado (Saída negativa)
+      const recipient = Math.random() > 0.5 ? generateRandomCompanyName() : generateRandomPersonName();
+      const amount = -parseFloat((randomInt(45, 2200) + Math.random()).toFixed(2));
+      transactions.push({
+        id: uniqueId,
+        type: 'pix_send',
+        title: 'Transferência enviada',
+        subtitle: `${recipient} - Pix`,
+        amount,
+        date,
+        category: pickRandom(['Fornecedores', 'Pagamentos', 'Serviços Terceirizados', 'Operacional']),
+      });
+    } else if (roll < 0.90) {
+      // Pagamento de Boleto
+      const utility = pickRandom(UTILITY_COMPANIES);
+      const amount = -parseFloat((randomInt(85, 950) + Math.random()).toFixed(2));
+      transactions.push({
+        id: uniqueId,
+        type: 'bill_payment',
+        title: 'Pagamento de boleto',
+        subtitle: utility,
+        amount,
+        date,
+        category: pickRandom(['Contas e Serviços', 'Tributos', 'Infraestrutura']),
+      });
+    } else {
+      // Compra Cartão Corporativo
+      const merchant = pickRandom(CARD_MERCHANTS);
+      const amount = -parseFloat((randomInt(30, 480) + Math.random()).toFixed(2));
+      transactions.push({
+        id: uniqueId,
+        type: 'card_expense',
+        title: 'Compra no cartão corporativo',
+        subtitle: merchant,
+        amount,
+        date,
+        category: pickRandom(['Transporte', 'Alimentação', 'Materiais de Escritório', 'Tecnologia']),
+      });
+    }
+  }
+
+  return transactions;
+}
+
+/**
+ * Cria um conjunto inicial fresco de dados do aplicativo.
+ * Chamado dinamicamente para cada novo visitante ou quando resetado.
+ */
+export function generateFreshAppData(): AppCustomData {
+  return {
+    userName: 'Rafael Tavares Matos',
+    userInitials: 'RT',
+    agency: '0001',
+    accountNumber: '79827260-9',
+    companyName: 'Rafa Arts Graphics',
+    cnpj: '28.884.125/0001-40',
+    accountTitle: 'Conta Nu Empresas',
+
+    accessPin: '',
+
+    balance: 0,
+    creditCardLimit: 'R$ 0,00',
+    loanLimit: 'R$ 0',
+
+    showReminder: false,
+    reminderTitle: '',
+    reminderSubtitle: '',
+    bannerTitle: '',
+    bannerSubtitle: '',
+
+    defaultRecipientName: '',
+    defaultRecipientInitials: '',
+    defaultRecipientDoc: '',
+    defaultRecipientInstitution: '',
+    defaultRecipientAccountType: '',
+    defaultTransferAmount: 0,
+
+    loginTitle: 'Queremos deixar seu roxinho ainda mais protegido. Por isso, sempre vamos pedir uma senha para acessar o aplicativo.',
+    loginButtonText: 'Criar senha de acesso',
+    loginHelperText: 'Essa senha será usada sempre que você abrir o app.',
+    skipIntroText: 'Pular esta explicação da próxima vez...',
+
+    simulatedPixSender: '',
+    simulatedPixAmount: 0,
+    simulatedPixBank: '',
+    simulatedPixMessage: '',
+    pixNotificationSound: true,
+    pixAutoCreditBalance: true,
+
+    contacts: generateRandomContacts(12),
+    transactions: generateRandomTransactions(14),
+  };
+}
+
+// Retrocompatibilidade para referências existentes
+export const INITIAL_CONTACTS: Contact[] = generateRandomContacts(12);
+export const INITIAL_TRANSACTIONS: Transaction[] = generateRandomTransactions(14);
+export const DEFAULT_APP_DATA: AppCustomData = generateFreshAppData();

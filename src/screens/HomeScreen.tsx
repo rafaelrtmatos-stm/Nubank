@@ -290,9 +290,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="flex items-center justify-between cursor-pointer group">
           <div className="flex-1">
             <div 
-              onClick={() => setShowQuickBalanceModal(true)}
+              onClick={() => onNavigate('Extrato')}
               className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-              title="Clique para editar o saldo da conta"
+              title="Toque para abrir o extrato da conta"
             >
               <h2 className="text-base font-bold text-neutral-900">
                 <EditableText
@@ -306,9 +306,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="mt-1 flex items-center gap-2">
               {isBalanceVisible ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-2xl sm:text-[28px] font-bold text-neutral-900 tracking-tight">
+                  <span 
+                    onClick={() => {
+                      if (!isInlineEditMode) {
+                        onNavigate('Extrato');
+                      }
+                    }}
+                    className="text-2xl sm:text-[28px] font-bold text-neutral-900 tracking-tight cursor-pointer hover:text-[#820AD1] transition-colors"
+                    title="Toque para ver o extrato"
+                  >
                     {isInlineEditMode ? (
-                      <span className="flex items-center gap-1">
+                      <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         <span>R$ </span>
                         <EditableText
                           type="currency"
@@ -318,13 +326,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                         />
                       </span>
                     ) : (
-                      <span
-                        onClick={() => setShowQuickBalanceModal(true)}
-                        className="cursor-pointer hover:text-[#820AD1] transition-colors"
-                        title="Toque para editar o saldo"
-                      >
-                        {formattedBalance}
-                      </span>
+                      <span>{formattedBalance}</span>
                     )}
                   </span>
                   
@@ -345,7 +347,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   )}
                 </div>
               ) : (
-                <div className="h-8 flex items-center gap-1.5 py-1">
+                <div 
+                  onClick={() => onNavigate('Extrato')}
+                  className="h-8 flex items-center gap-1.5 py-1 cursor-pointer"
+                  title="Toque para abrir o extrato"
+                >
                   <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
                   <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
                   <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
@@ -424,10 +430,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {/* Extrato */}
           <button
             id="btn-action-statement"
-            onClick={() => {
-              const el = document.getElementById('recent-activity-section');
-              el?.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onClick={() => onNavigate('Extrato')}
             className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
           >
             <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
@@ -492,13 +495,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       {/* Recent Activity / Extrato */}
       <div id="recent-activity-section" className="px-5 pt-2">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-bold text-neutral-900">Histórico de Transações</h3>
-          <button 
-            onClick={onOpenEditModal}
-            className="text-xs text-[#820AD1] font-semibold flex items-center gap-1 hover:underline"
+          <div 
+            onClick={() => onNavigate('Extrato')}
+            className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
+            title="Abrir extrato completo"
           >
-            <span>Editar lista</span>
-          </button>
+            <h3 className="text-sm font-bold text-neutral-900">Histórico de Transações</h3>
+            <ChevronRight className="w-4 h-4 text-neutral-400" />
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => onNavigate('Extrato')}
+              className="text-xs text-[#820AD1] font-semibold hover:underline cursor-pointer"
+            >
+              Ver extrato
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
@@ -507,7 +519,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             return (
               <div
                 key={tx.id || idx}
-                className="flex items-center justify-between p-3.5 rounded-2xl hover:bg-neutral-50 border border-neutral-100 transition-colors"
+                onClick={() => onNavigate('Extrato')}
+                className="flex items-center justify-between p-3.5 rounded-2xl hover:bg-neutral-50 active:bg-neutral-100 border border-neutral-100 transition-colors cursor-pointer"
+                title="Toque para ver detalhes no extrato"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
@@ -538,12 +552,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
           {appData.transactions.length === 0 && (
             <div className="py-8 text-center text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 p-4">
               <p className="text-xs">Nenhuma movimentação recente cadastrada.</p>
-              <button
-                onClick={onOpenEditModal}
-                className="mt-2 text-xs text-[#820AD1] font-semibold underline"
-              >
-                Adicionar transações fictícias
-              </button>
             </div>
           )}
         </div>
@@ -840,18 +848,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </button>
                 </div>
               </div>
-
-              {/* Edit simulation data quick link */}
-              <button
-                onClick={() => {
-                  setShowCobrarModal(false);
-                  onOpenEditModal();
-                }}
-                className="w-full text-center py-2.5 text-xs text-purple-700 font-semibold bg-purple-50 hover:bg-purple-100 rounded-xl transition-colors flex items-center justify-center gap-1.5"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>Configurar valor e remetente do Pix na aba de edição</span>
-              </button>
             </div>
           </motion.div>
         </div>

@@ -8,7 +8,8 @@ export type ScreenName =
   | 'Transfer' 
   | 'ConfirmTransfer' 
   | 'Receipt'
-  | 'ScanQrCode';
+  | 'ScanQrCode'
+  | 'Extrato';
 
 export interface Contact {
   id: string;
