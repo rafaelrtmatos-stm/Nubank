@@ -131,7 +131,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   };
 
   const handleCopyAccountInfo = () => {
-    const info = `Nu Pagamentos S.A. (260) • Agência ${appData.agency || '0001'} • Conta ${appData.accountNumber || '79827260-9'}`;
+    const info = `Nu Pagamentos S.A. (260) • Agência ${appData.agency || '0001'} • Conta ${appData.accountNumber || '••••••••-•'}`;
     if (typeof navigator !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(info).catch(() => {});
     }
@@ -623,10 +623,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
               <div className="flex-1 min-w-0">
                 <h3 className="text-base sm:text-[17px] font-bold text-neutral-900 tracking-tight leading-snug truncate">
-                  {appData.companyName || 'Rafa Arts Graphics'}
+                  {appData.companyName || 'Conta PJ'}
                 </h3>
                 <p className="text-[13px] text-neutral-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                  <span>Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '79827260-9'}</span>
+                  <span>Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '••••••••-•'}</span>
                   <button
                     onClick={handleCopyAccountInfo}
                     className="text-[#820AD1] font-semibold hover:underline cursor-pointer ml-0.5"
@@ -655,7 +655,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
               {/* User personal account */}
               <div 
-                onClick={() => alert(`Acessando conta pessoal de ${appData.userName || 'Rafael Tavares Matos'}`)}
+                onClick={() => alert(`Acessando conta pessoal de ${appData.userName || 'Titular da Conta'}`)}
                 className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
               >
                 <div className="flex items-center gap-3.5 min-w-0">
@@ -664,7 +664,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </div>
                   <div className="min-w-0">
                     <p className="text-[15px] font-bold text-neutral-900 leading-tight truncate">
-                      {appData.userName || 'Rafael Tavares Matos'}
+                      {appData.userName || 'Titular da Conta'}
                     </p>
                     <p className="text-[12px] text-neutral-500 mt-0.5">Conta pessoal</p>
                   </div>
@@ -772,8 +772,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 </div>
 
                 <div className="mt-3 w-full">
-                  <p className="text-xs font-bold text-neutral-900">{appData.companyName}</p>
-                  <p className="text-[11px] text-neutral-500">Chave CNPJ: {appData.cnpj}</p>
+                  <p className="text-xs font-bold text-neutral-900">{appData.companyName || 'Conta PJ'}</p>
+                  <p className="text-[11px] text-neutral-500">Chave CNPJ: {appData.cnpj || 'Não cadastrada'}</p>
                 </div>
               </div>
 

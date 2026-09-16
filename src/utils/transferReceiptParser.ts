@@ -116,8 +116,8 @@ export function getSampleReceiptData(): ExtractedRecipientData {
     amount: 80.00,
     date: '10 SET 2026 - 06:42:46',
     transactionId: 'E18236120202609100942s05f86c21f4',
-    payerName: 'RAFAEL TAVARES MATOS',
-    payerDocument: '28.884.125/0001-40',
+    payerName: 'TITULAR DA CONTA',
+    payerDocument: '***.***.***-**',
     payerInstitution: 'Nu Pagamentos S.A.',
     rawText: 'Comprovante Pix Nubank: Ingrid Aline Correa Sousa, Nu Pagamentos, +5593991375497, R$ 80,00',
   };

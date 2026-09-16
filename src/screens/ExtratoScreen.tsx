@@ -166,7 +166,7 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
         </div>
 
         <p className="text-[11px] text-neutral-400 mt-1">
-          Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '79827260-9'} • {appData.companyName || 'Rafa Arts Graphics'}
+          Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '••••••••-•'} • {appData.companyName || 'Conta PJ'}
         </p>
 
         {/* Dinheiro guardado Card */}
@@ -191,7 +191,7 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
         {/* Quick Action Pills */}
         <div className="mt-5 grid grid-cols-4 gap-2.5">
           <button
-            onClick={() => alert(`Dados para depósito:\nBanco: 260 - Nu Pagamentos S.A.\nAgência: ${appData.agency || '0001'}\nConta: ${appData.accountNumber || '79827260-9'}\nCNPJ: ${appData.cnpj || '28.884.125/0001-40'}`)}
+            onClick={() => alert(`Dados para depósito:\nBanco: 260 - Nu Pagamentos S.A.\nAgência: ${appData.agency || '0001'}\nConta: ${appData.accountNumber || '••••••••-•'}\nCNPJ: ${appData.cnpj || 'Não cadastrado'}`)}
             className="flex flex-col items-center gap-1.5 p-2.5 rounded-2xl bg-[#f5f5f7] hover:bg-[#ebebed] active:scale-95 transition-all cursor-pointer"
           >
             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-neutral-900 shadow-2xs">
@@ -415,7 +415,7 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
 
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-500">Origem</span>
-                  <span className="font-semibold text-neutral-800">{appData.companyName || 'Rafa Arts Graphics'}</span>
+                  <span className="font-semibold text-neutral-800">{appData.companyName || 'Conta PJ'}</span>
                 </div>
 
                 <div className="flex justify-between items-center">

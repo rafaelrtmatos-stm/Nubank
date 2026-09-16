@@ -60,7 +60,7 @@ async function startServer() {
 REGRAS CRÍTICAS:
 1. DESTINO vs ORIGEM:
    - "name": DEVE ser o nome da pessoa/empresa que RECEBEU o dinheiro (sob "Destino", "Favorecido", "Recebedor" ou "Para"). Ex: "Isabela Letícia Corrêa Pereira". NUNCA coloque o nome do pagador/remetente neste campo!
-   - "payerName": DEVE ser o nome de quem ENVIOU/PAGOU o dinheiro (sob "Origem", "Pagador", "Remetente" ou "De"). Ex: "Rafael Tavares Matos".
+   - "payerName": DEVE ser o nome de quem ENVIOU/PAGOU o dinheiro (sob "Origem", "Pagador", "Remetente" ou "De"). Ex: "João Carlos da Silva".
 2. "amount": Valor numérico exato transferido em reais (ex: para "R$ 10,00", retorne 10.00).
 3. "institution": Instituição financeira do recebedor/destino (ex: "NU PAGAMENTOS - IP" ou "Nu Pagamentos S.A.").
 4. "date": Data e hora exatas da transação (ex: "07 SET 2026 - 16:37:03").

@@ -925,7 +925,7 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
                         type="text"
                         value={formData.accountNumber}
                         onChange={(e) => handleChange('accountNumber', e.target.value)}
-                        placeholder="79827260-9"
+                        placeholder="00000000-0"
                         maxLength={15}
                         className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#820AD1]"
                       />

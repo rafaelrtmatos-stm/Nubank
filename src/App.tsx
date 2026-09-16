@@ -21,11 +21,7 @@ import { PixPushNotification } from './components/PixPushNotification';
 import { AppCustomData, Contact, ScreenName, Transaction, TransferData, ActivePixNotification } from './types';
 import { 
   DEFAULT_APP_DATA, 
-  INITIAL_TRANSACTIONS, 
-  INITIAL_CONTACTS,
   generateFreshAppData,
-  generateRandomContacts,
-  generateRandomTransactions
 } from './data/mockData';
 import { playPixNotificationSound } from './utils/audio';
 import { 
@@ -34,7 +30,7 @@ import {
 } from './utils/nativeNotification';
 import { CheckCircle2, Sliders, Edit3, ArrowDownLeft } from 'lucide-react';
 
-const STORAGE_KEY = 'nu_empresas_custom_data_v3';
+const STORAGE_KEY = 'nu_empresas_custom_data_v4';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('Splash');
@@ -46,43 +42,11 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        
-        // Se houver dados legados com nomes anteriores estáticos, renova com nomes aleatórios
-        const legacyNames = ['Josiane', 'Uclebson', 'Geo Florestal', 'Elicleia', 'Distribuidora de Bebidas Brasil', 'Mercado & Conveniência Silva', 'Enel Distribuição São Paulo'];
-        const hasLegacy = (Array.isArray(parsed.contacts) && parsed.contacts.some((c: any) => legacyNames.some(ln => c.name?.includes(ln)))) ||
-                          (Array.isArray(parsed.transactions) && parsed.transactions.some((t: any) => legacyNames.some(ln => t.subtitle?.includes(ln))));
-
-        if (hasLegacy) {
-          const fresh = generateFreshAppData();
-          return {
-            ...fresh,
-            ...parsed,
-            contacts: fresh.contacts,
-            transactions: fresh.transactions,
-          };
-        }
-
-        // Garante pelo menos 10 transações
-        let loadedTransactions: Transaction[] = [];
-        if (Array.isArray(parsed.transactions) && parsed.transactions.length >= 10) {
-          loadedTransactions = parsed.transactions;
-        } else {
-          loadedTransactions = generateRandomTransactions(14);
-        }
-
-        // Garante pelo menos 8 contatos
-        let loadedContacts: Contact[] = [];
-        if (Array.isArray(parsed.contacts) && parsed.contacts.length >= 8) {
-          loadedContacts = parsed.contacts;
-        } else {
-          loadedContacts = generateRandomContacts(12);
-        }
-
         return {
           ...generateFreshAppData(),
           ...parsed,
-          contacts: loadedContacts,
-          transactions: loadedTransactions,
+          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
+          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
         };
       }
     } catch (e) {
@@ -157,7 +121,7 @@ export default function App() {
     setIsBalanceVisible(true);
     setSkipIntro(false);
     localStorage.removeItem(STORAGE_KEY);
-    showToast('Dados restaurados com novo extrato e contatos exclusivos!');
+    showToast('Dados redefinidos e zerados com sucesso!');
   };
 
   // Trigger Pix Receive Simulation

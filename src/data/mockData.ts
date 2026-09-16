@@ -277,12 +277,12 @@ export function generateRandomTransactions(count = 14): Transaction[] {
  */
 export function generateFreshAppData(): AppCustomData {
   return {
-    userName: 'Rafael Tavares Matos',
-    userInitials: 'RT',
+    userName: '',
+    userInitials: '',
     agency: '0001',
-    accountNumber: '79827260-9',
-    companyName: 'Rafa Arts Graphics',
-    cnpj: '28.884.125/0001-40',
+    accountNumber: '',
+    companyName: '',
+    cnpj: '',
     accountTitle: 'Conta Nu Empresas',
 
     accessPin: '',
@@ -316,12 +316,12 @@ export function generateFreshAppData(): AppCustomData {
     pixNotificationSound: true,
     pixAutoCreditBalance: true,
 
-    contacts: generateRandomContacts(12),
-    transactions: generateRandomTransactions(14),
+    contacts: [],
+    transactions: [],
   };
 }
 
 // Retrocompatibilidade para referências existentes
-export const INITIAL_CONTACTS: Contact[] = generateRandomContacts(12);
-export const INITIAL_TRANSACTIONS: Transaction[] = generateRandomTransactions(14);
+export const INITIAL_CONTACTS: Contact[] = [];
+export const INITIAL_TRANSACTIONS: Transaction[] = [];
 export const DEFAULT_APP_DATA: AppCustomData = generateFreshAppData();
