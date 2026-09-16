@@ -49,6 +49,12 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
   const [beneficiaryCnpj, setBeneficiaryCnpj] = useState<string>(
     () => extractedData?.beneficiaryCnpj || '00.000.000/0001-00'
   );
+  const [payerName, setPayerName] = useState<string>(
+    () => extractedData?.payerName || ''
+  );
+  const [unitOrContract, setUnitOrContract] = useState<string>(
+    () => extractedData?.unitOrContract || ''
+  );
 
   // Whenever extractedData changes or modal opens, update the form fields with newly extracted data
   React.useEffect(() => {
@@ -61,6 +67,8 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
       setNossoNumero(extractedData.nossoNumero || '');
       setBeneficiaryName(extractedData.beneficiaryName || 'Beneficiário do Boleto');
       setBeneficiaryCnpj(extractedData.beneficiaryCnpj || '00.000.000/0001-00');
+      setPayerName(extractedData.payerName || '');
+      setUnitOrContract(extractedData.unitOrContract || '');
     }
   }, [extractedData, isOpen]);
 
@@ -91,8 +99,10 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
       dueDate: dueDate,
       nossoNumero: nossoNumero,
       barcodeNumber: barcodeNumber,
-      identifierCode: `BOLETO${nossoNumero.replace(/\D/g, '')}`,
+      identifierCode: nossoNumero ? `BOLETO${nossoNumero.replace(/\D/g, '')}` : `BOLETO${Date.now()}`,
       originalDescription: `Venc: ${dueDate} - R$ ${parsedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      payerName: payerName,
+      unitOrContract: unitOrContract,
     };
 
     onConfirm(transferData);
@@ -237,6 +247,36 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
                 value={beneficiaryCnpj}
                 onChange={(e) => setBeneficiaryCnpj(e.target.value)}
                 placeholder="00.000.000/0001-00"
+                className="w-full px-3.5 py-2 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl font-mono text-xs text-neutral-900 outline-hidden transition-colors"
+              />
+            </div>
+
+            {/* Pagador / Titular */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1 flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-neutral-500" />
+                Pagador / Titular da Conta
+              </label>
+              <input
+                type="text"
+                value={payerName}
+                onChange={(e) => setPayerName(e.target.value)}
+                placeholder="Ex: DANIEL SOUZA DE ANDRADE"
+                className="w-full px-3.5 py-2 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl text-xs font-medium text-neutral-900 outline-hidden transition-colors"
+              />
+            </div>
+
+            {/* Unidade Consumidora / Contrato */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1 flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-neutral-500" />
+                Unidade Consumidora / Conta Contrato
+              </label>
+              <input
+                type="text"
+                value={unitOrContract}
+                onChange={(e) => setUnitOrContract(e.target.value)}
+                placeholder="Ex: 2.914.381.013-63"
                 className="w-full px-3.5 py-2 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl font-mono text-xs text-neutral-900 outline-hidden transition-colors"
               />
             </div>

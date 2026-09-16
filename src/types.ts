@@ -47,6 +47,8 @@ export interface TransferData {
   originalDescription?: string;
   transactionId?: string;
   receiptDateFormatted?: string;
+  payerName?: string;
+  unitOrContract?: string;
 }
 
 export interface AppCustomData {

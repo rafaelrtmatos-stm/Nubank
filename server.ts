@@ -159,6 +159,132 @@ REGRAS CRÍTICAS:
     }
   });
 
+  // Bill & Boleto extraction endpoint powered by Gemini Flash Multimodal Vision
+  app.post("/api/extract-bill", async (req, res) => {
+    try {
+      const { base64Data, mimeType } = req.body;
+      if (!base64Data) {
+        return res.status(400).json({ error: "Dados da fatura ou boleto não fornecidos." });
+      }
+
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(200).json({ 
+          success: false, 
+          fallback: true, 
+          message: "GEMINI_API_KEY não configurada. Usando extrator local." 
+        });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+
+      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+
+      const prompt = `Você é um analista especialista em boletos bancários e faturas de concessionárias de serviços públicos do Brasil (energia elétrica como Equatorial Energia, Enel, Cemig, Copel, CPFL; água como Sabesp, Sanepar; telecom como Claro, Vivo, TIM; e boletos de cobrança de bancos como Banco do Brasil, Bradesco, Itaú, Santander, Caixa, etc.).
+Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os campos com a máxima fidelidade:
+
+1. "beneficiaryName": Nome da empresa beneficiária / concessionária (ex: "EQUATORIAL PARÁ DISTRIB. DE ENERGIA S.A.", "ENEL DISTRIBUIÇÃO", "BANCO DO BRASIL S.A."). Procure no cabeçalho ou no campo BENEFICIÁRIO.
+2. "beneficiaryCnpj": CNPJ da empresa beneficiária se constar no documento (ex: "04.895.728/0001-80").
+3. "beneficiaryBank": Nome do banco emissor ou cobrador (ex: "BANCO DO BRASIL S.A." para código 001-9, "BCO BRADESCO S.A.", "ITAU UNIBANCO S.A.", "CAIXA ECONOMICA FEDERAL", etc.).
+4. "amount": Valor total a pagar em reais como número decimal (ex: para "R$ 879,74", retorne 879.74). NUNCA confunda com débitos anteriores ou juros parciais! Procure no campo "Total a Pagar", "VALOR DOCUMENTO", "VALOR COBRADO" ou nos últimos 10 dígitos da linha digitável.
+5. "dueDate": Data de vencimento no formato DD/MM/AAAA ou DD.MM.AAAA (ex: "20/07/2026"). NUNCA confunda com data de leitura anterior, data de corte ou emissão.
+6. "barcodeNumber": Linha digitável completa com pontos e espaços (ex: "00190.00009 03373.384266 60612.719173 1 00000000087974").
+7. "nossoNumero": Código Nosso Número do boleto se presente (ex: "33733842660612719").
+8. "payerName": Nome completo do pagador / titular da conta (ex: "DANIEL SOUZA DE ANDRADE").
+9. "payerCpf": CPF ou CNPJ do pagador/titular (ex: "950.246.202-59" ou "***.246.20*-**").
+10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.914.381.013-63").`;
+
+      const candidateModels = [
+        "gemini-3.1-flash-lite",
+        "gemini-3.8-flash",
+        "gemini-flash-latest",
+        "gemini-3.1-pro-preview"
+      ];
+
+      let lastError: any = null;
+      let resultData: any = null;
+
+      for (const modelName of candidateModels) {
+        try {
+          console.log(`[Bill Extraction] Tentando modelo ${modelName}...`);
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    inlineData: {
+                      mimeType: mimeType || "application/pdf",
+                      data: cleanBase64,
+                    },
+                  },
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  beneficiaryName: { type: Type.STRING, description: "Nome da empresa beneficiária" },
+                  beneficiaryCnpj: { type: Type.STRING, description: "CNPJ da empresa beneficiária" },
+                  beneficiaryBank: { type: Type.STRING, description: "Banco do boleto" },
+                  beneficiaryAccountType: { type: Type.STRING, description: "Tipo de conta" },
+                  amount: { type: Type.NUMBER, description: "Valor a pagar em reais" },
+                  dueDate: { type: Type.STRING, description: "Data de vencimento" },
+                  barcodeNumber: { type: Type.STRING, description: "Linha digitável do boleto" },
+                  nossoNumero: { type: Type.STRING, description: "Nosso número do boleto" },
+                  payerName: { type: Type.STRING, description: "Nome do cliente/pagador" },
+                  payerCpf: { type: Type.STRING, description: "CPF ou documento do pagador" },
+                  unitOrContract: { type: Type.STRING, description: "Unidade consumidora ou instalação" },
+                },
+                required: ["beneficiaryName", "amount", "dueDate"],
+              },
+            },
+          });
+
+          const parsedText = response.text?.trim() || "{}";
+          const parsed = JSON.parse(parsedText);
+          if (parsed && (parsed.beneficiaryName || parsed.amount)) {
+            console.log(`[Bill Extraction] Sucesso com modelo ${modelName}:`, parsed.beneficiaryName, `R$ ${parsed.amount}`, `Venc: ${parsed.dueDate}`);
+            resultData = parsed;
+            break;
+          }
+        } catch (err: any) {
+          console.warn(`[Bill Extraction] Modelo ${modelName} falhou:`, err.message || err);
+          lastError = err;
+        }
+      }
+
+      if (resultData) {
+        return res.json({
+          success: true,
+          data: resultData,
+        });
+      }
+
+      throw lastError || new Error("Não foi possível extrair os dados da fatura.");
+    } catch (err: any) {
+      console.error("Erro no Gemini ao processar fatura:", err);
+      return res.status(200).json({
+        success: false,
+        fallback: true,
+        error: err.message || "Falha na análise via IA, alternando para extrator local.",
+      });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
