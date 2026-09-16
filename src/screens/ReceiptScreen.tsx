@@ -61,15 +61,15 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
 
   const isBillPayment = transferData?.isBillPayment || false;
 
-  // Payer (Origem) info from appData registered in system
+  // Payer (Origem) info from appData registered in system (or from extracted bill if provided)
   const payerName = isBillPayment
-    ? (appData.userName || 'TITULAR DA CONTA')
+    ? (transferData?.payerName || appData.userName || 'TITULAR DA CONTA')
     : (appData.companyName || appData.userName || 'TITULAR DA CONTA');
   const payerInstitution = 'NU PAGAMENTOS - IP';
   const payerAgency = appData.agency || '0001';
   const payerAccount = appData.accountNumber || '79827260-9';
   const payerCnpj = appData.cnpj?.replace(/\D/g, '') || '';
-  const payerCpfMasked = appData.cnpj ? appData.cnpj : '***.000.000-**';
+  const payerCpfMasked = transferData?.payerCpf || (appData.cnpj ? appData.cnpj : '***.000.000-**');
 
   // Recipient (Destino / Beneficiário) info from recipient searched/selected
   const destName = recipient.name || (isBillPayment ? 'Concessionária de Energia S.A.' : 'Destinatário Pix');
@@ -297,6 +297,15 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                   </div>
                 )}
 
+                {transferData?.unitOrContract && (
+                  <div className="flex justify-between items-start pt-1">
+                    <span className="text-neutral-900 font-normal shrink-0">Unidade consumidora</span>
+                    <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] break-all leading-relaxed font-mono">
+                      {transferData.unitOrContract}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-start pt-1">
                   <span className="text-neutral-900 font-normal shrink-0">Descrição original</span>
                   <span className="text-neutral-900 font-normal text-right text-xs max-w-[200px] sm:max-w-[220px] leading-relaxed">
@@ -423,9 +432,13 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
                 </div>
 
                 <div className="flex justify-between items-center">
-                  <span className="text-neutral-900 font-normal">{appData.cnpj ? 'CNPJ' : 'CPF'}</span>
+                  <span className="text-neutral-900 font-normal">
+                    {isBillPayment && transferData?.payerCpf ? 'CPF' : (appData.cnpj ? 'CNPJ' : 'CPF')}
+                  </span>
                   <span className="text-neutral-900 font-normal text-right">
-                    {appData.cnpj || payerCpfMasked || '...803.262-..'}
+                    {isBillPayment && transferData?.payerCpf
+                      ? transferData.payerCpf
+                      : (appData.cnpj || payerCpfMasked)}
                   </span>
                 </div>
               </div>

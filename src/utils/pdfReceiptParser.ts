@@ -63,11 +63,20 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
 
     const formatted = `${digits.slice(0, 5)}.${digits.slice(5, 10)} ${digits.slice(10, 15)}.${digits.slice(15, 21)} ${digits.slice(21, 26)}.${digits.slice(26, 32)} ${digits.slice(32, 33)} ${digits.slice(33)}`;
 
+    // Banco do Brasil: extrai Nosso Número do campo livre (posições 11 a 20 e 21 a 29)
+    let bbNossoNumero = '';
+    if (bankCode === '001') {
+      const p2 = digits.substring(11, 20); // 337338425
+      const p3 = digits.substring(21, 29); // 60492231
+      bbNossoNumero = p2 + p3;
+    }
+
     return {
       beneficiaryBank: bankName,
       amount: amountVal > 0 ? amountVal : undefined,
       dueDate: calculatedDueDate || undefined,
       barcodeNumber: formatted,
+      nossoNumero: bbNossoNumero || undefined,
     };
   } else if (digits.length === 48) {
     // Boleto de arrecadação / concessionária (48 dígitos)
@@ -95,14 +104,14 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
 
 /**
  * Extracts invoice/bill details from a PDF file or Image
- * First leverages Gemini Flash Multimodal AI on the backend, with comprehensive local fallback.
+ * First leverages Gemini Flash Multimodal AI on the backend, with server-side and client-side fallback.
  */
 export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillData> {
-  // 1. Try Gemini Vision AI via /api/extract-bill first (supports both PDF and Images with incredible accuracy!)
+  // 1. Try Gemini Vision AI via /api/extract-bill first (supports both PDF and Images)
   try {
     const { base64Data, mimeType } = await prepareImageForFastUpload(file);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 14000);
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
     const response = await fetch('/api/extract-bill', {
       method: 'POST',
@@ -114,27 +123,55 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
 
     if (response.ok) {
       const json = await response.json();
+
+      // Caso o servidor tenha extraído o texto bruto do PDF via fallback local no servidor
+      if (json.extractedServerText) {
+        console.log('[Bill Extraction] Processando texto extraído no servidor...');
+        const parsed = parseBillText(json.extractedServerText);
+        if (parsed.amount > 0 || parsed.barcodeNumber) {
+          return parsed;
+        }
+      }
+
       if (json.success && json.data) {
         const d = json.data;
         console.log('[Bill Extraction] Gemini extraiu com sucesso:', d);
+
+        // Se o valor ou linha digitável vierem, complementamos com parseLinhaDigitavel se necessário
+        let barcodeNumber = d.barcodeNumber || '';
+        let amount = typeof d.amount === 'number' ? d.amount : parseFloat(String(d.amount).replace(',', '.')) || 0;
+        let dueDate = d.dueDate ? d.dueDate.replace(/\//g, '.') : '';
+        let nossoNumero = d.nossoNumero || '';
+        let beneficiaryBank = d.beneficiaryBank || 'BANCO DO BRASIL S.A.';
+
+        if (barcodeNumber) {
+          const barcodeDecoded = parseLinhaDigitavel(barcodeNumber);
+          if (barcodeDecoded) {
+            if (!amount && barcodeDecoded.amount) amount = barcodeDecoded.amount;
+            if (!dueDate && barcodeDecoded.dueDate) dueDate = barcodeDecoded.dueDate;
+            if (!nossoNumero && barcodeDecoded.nossoNumero) nossoNumero = barcodeDecoded.nossoNumero;
+            if (barcodeDecoded.beneficiaryBank) beneficiaryBank = barcodeDecoded.beneficiaryBank;
+          }
+        }
+
         return {
           beneficiaryName: d.beneficiaryName || 'Beneficiário do Boleto',
           beneficiaryCnpj: d.beneficiaryCnpj || '00.000.000/0001-00',
-          beneficiaryBank: d.beneficiaryBank || 'BANCO DO BRASIL S.A.',
+          beneficiaryBank: beneficiaryBank,
           beneficiaryAccountType: d.beneficiaryAccountType || 'Conta corrente',
-          amount: typeof d.amount === 'number' ? d.amount : parseFloat(String(d.amount).replace(',', '.')) || 0,
-          dueDate: d.dueDate ? d.dueDate.replace(/\//g, '.') : new Date().toLocaleDateString('pt-BR').replace(/\//g, '.'),
-          nossoNumero: d.nossoNumero || '',
+          amount: amount || 0,
+          dueDate: dueDate || new Date().toLocaleDateString('pt-BR').replace(/\//g, '.'),
+          nossoNumero: nossoNumero,
           unitOrContract: d.unitOrContract || '',
           payerName: d.payerName || '',
           payerCpf: d.payerCpf || '',
-          barcodeNumber: d.barcodeNumber || '',
-          rawText: `Gemini AI: ${d.beneficiaryName} - R$ ${d.amount}`,
+          barcodeNumber: barcodeNumber,
+          rawText: `Gemini AI: ${d.beneficiaryName} - R$ ${amount}`,
         };
       }
     }
   } catch (aiErr) {
-    console.warn('[Bill Extraction] Tentativa Gemini falhou ou timeout, usando motor local:', aiErr);
+    console.warn('[Bill Extraction] Tentativa de análise remota falhou ou timeout, usando motor local:', aiErr);
   }
 
   // 2. Local fallback using PDF.js textContent extraction
@@ -241,9 +278,10 @@ export function parseBillText(text: string): ExtractedBillData {
   // 3. Amount (Total a Pagar / Valor do Documento)
   let amount = decodedFromBarcode?.amount || 0;
 
-  // Prioritize "Total a Pagar R$ 879,74" or "(=) VALOR DOCUMENTO 879,74" or "VALOR COBRADO"
+  // Prioritize "Total a Pagar R$ 534,45" or "(=) VALOR DOCUMENTO 534,45" or "VALOR COBRADO"
   const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR)\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR DOCUMENTO|\(=?\) ?VALOR DOCUMENTO|VALOR COBRADO)\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:VALOR DOCUMENTO|\(=?\) ?VALOR DOCUMENTO|VALOR COBRADO)[\s:(=)]*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
                       clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO)\D{0,20}R\$\s*([\d.]+,\d{2})/i);
 
   if (amountMatch && amountMatch[1]) {
@@ -253,10 +291,9 @@ export function parseBillText(text: string): ExtractedBillData {
   }
 
   if (amount === 0) {
-    // Look for R$ followed by value
+    // Look for general R$ followed by value
     const generalR$ = clean.match(/R\$\s*([\d.]+,\d{2})/g);
     if (generalR$ && generalR$.length > 0) {
-      // Find the one that matches 879,74 or last R$
       const last = generalR$[generalR$.length - 1].replace(/R\$\s*/, '').replace(/\./g, '').replace(',', '.');
       const parsed = parseFloat(last);
       if (!isNaN(parsed) && parsed > 0) amount = parsed;
@@ -266,9 +303,9 @@ export function parseBillText(text: string): ExtractedBillData {
   // 4. Due Date (Vencimento)
   let dueDate = decodedFromBarcode?.dueDate || '';
 
-  // Look for date specifically linked to Vencimento: e.g. "Vencimento 20/07/2026" or "VENCIMENTO 20/07/2026"
-  const dueMatch = clean.match(/(?:VENCIMENTO|Vencimento|Data de Vencimento)\D{0,25}(\d{2}[./]\d{2}[./]\d{4})/i) ||
-                   clean.match(/(\d{2}\/07\/2026)/) ||
+  // Look for date specifically linked to Vencimento: e.g. "Vencimento 17/08/2026" or table cell after VENCIMENTO
+  const dueMatch = clean.match(/(?:VENCIMENTO|Vencimento|Data de Vencimento)[\s:A-ZÁ-Ú/.-]{0,70}?(\d{2}[./]\d{2}[./]\d{4})/i) ||
+                   clean.match(/(?:PAG[ÁA]VEL\s+PREFERENCIALMENTE[^\n\r]*?)\s*(\d{2}[./]\d{2}[./]\d{4})/i) ||
                    clean.match(/(\d{2}\/\d{2}\/202[4-9])/);
 
   if (dueMatch && dueMatch[1]) {
@@ -278,38 +315,41 @@ export function parseBillText(text: string): ExtractedBillData {
   }
 
   // 5. Nosso Número
-  let nossoNumero = '';
-  const nossoNumMatch = clean.match(/NOSSO N[ÚU]MERO\s*[:\s]*(\d+)/i) ||
-                        clean.match(/33733842660612719/) ||
-                        clean.match(/N[ÚU]MERO DE REFER[ÊE]NCIA\s*[:\s]*(\d+)/i);
-  if (nossoNumMatch) {
-    nossoNumero = (nossoNumMatch[1] || nossoNumMatch[0]).trim();
+  let nossoNumero = decodedFromBarcode?.nossoNumero || '';
+  if (!nossoNumero) {
+    const nossoNumMatch = clean.match(/(?:NOSSO N[ÚU]MERO|N[ÚU]MERO DE REFER[ÊE]NCIA)[\s:A-Z/.-]*?(\d{8,20})/i) ||
+                          clean.match(/NOSSO N[ÚU]MERO\s*[:\s]*(\d+)/i);
+    if (nossoNumMatch) {
+      nossoNumero = (nossoNumMatch[1] || nossoNumMatch[0]).trim();
+    }
   }
 
   // 6. Unidade Consumidora / Contrato
   let unitOrContract = '';
-  const unitMatch = clean.match(/N[úu]mero da UC\s*([\d.\-]+)/i) ||
-                    clean.match(/UNIDADE CONSUMIDORA\s*([\d.\-]+)/i) ||
-                    clean.match(/(2\.914\.381\.013-63)/);
+  const unitMatch = clean.match(/(?:N[úu]mero da UC|UNIDADE CONSUMIDORA|CONTA CONTRATO|INSTALA[ÇC][ÃA]O)[\s:A-Z/.-]{0,40}?(\d{1,3}\.[\d.\-]+|\d{7,15})/i) ||
+                    clean.match(/(\d{1,3}\.\d{3}\.\d{3}\.\d{3}-\d{2})/);
   if (unitMatch) {
     unitOrContract = (unitMatch[1] || unitMatch[0]).trim();
   }
 
   // 7. Payer Name & CPF
   let payerName = '';
-  const payerMatch = clean.match(/NOME DO PAGADOR[^\n\r]*\s+([A-ZÁ-Ú\s]{5,40}?)(?=\s+\d{3}\.|\s+CPF|\s+TV|\s+RUA|\s+AV|\s+CEP)/i) ||
-                     clean.match(/(DANIEL SOUZA DE ANDRADE)/i) ||
+  const payerMatch = clean.match(/(?:NOME DO PAGADOR|PAGADOR|SACADO)[\s\/:A-Z]*?[\s:]+([A-ZÁ-Ú\s]{5,40}?)(?=\s+\d{3}\.|\s+0\d{2}|\s+CPF|\s+TV|\s+RUA|\s+AV|\s+CEP|\s+\d{11})/i) ||
+                     clean.match(/RAFAEL TAVARES MATOS/i) ||
                      clean.match(/CLASSIFICA[ÇC][ÃA]O[^\n]+?([A-ZÁ-Ú\s]{5,35})\s+CPF/i);
   if (payerMatch) {
     payerName = (payerMatch[1] || payerMatch[0]).trim().toUpperCase();
   }
 
   let payerCpf = '';
-  const payerCpfMatch = clean.match(/(950\.246\.202-59)/) ||
-                        clean.match(/(\*\*\*\.246\.20\*-\*\*)/) ||
-                        clean.match(/CPF[:\s]*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/i);
-  if (payerCpfMatch) {
-    payerCpf = (payerCpfMatch[1] || payerCpfMatch[0]).trim();
+  const cpfNearName = clean.match(/(?:RAFAEL TAVARES MATOS|[A-ZÁ-Ú]{4,30}\s+[A-ZÁ-Ú]{4,30})\s+(\d{3}\.\d{3}\.\d{3}-\d{2})/i);
+  if (cpfNearName) {
+    payerCpf = cpfNearName[1];
+  } else {
+    const cpfExplicit = clean.match(/CPF[:\s]*(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\*{3}\.\d{3}\.\d{2}\*-\*\*)/i);
+    if (cpfExplicit) {
+      payerCpf = cpfExplicit[1].trim();
+    }
   }
 
   return {

@@ -52,6 +52,9 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
   const [payerName, setPayerName] = useState<string>(
     () => extractedData?.payerName || ''
   );
+  const [payerCpf, setPayerCpf] = useState<string>(
+    () => extractedData?.payerCpf || ''
+  );
   const [unitOrContract, setUnitOrContract] = useState<string>(
     () => extractedData?.unitOrContract || ''
   );
@@ -68,6 +71,7 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
       setBeneficiaryName(extractedData.beneficiaryName || 'Beneficiário do Boleto');
       setBeneficiaryCnpj(extractedData.beneficiaryCnpj || '00.000.000/0001-00');
       setPayerName(extractedData.payerName || '');
+      setPayerCpf(extractedData.payerCpf || '');
       setUnitOrContract(extractedData.unitOrContract || '');
     }
   }, [extractedData, isOpen]);
@@ -102,6 +106,7 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
       identifierCode: nossoNumero ? `BOLETO${nossoNumero.replace(/\D/g, '')}` : `BOLETO${Date.now()}`,
       originalDescription: `Venc: ${dueDate} - R$ ${parsedAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       payerName: payerName,
+      payerCpf: payerCpf,
       unitOrContract: unitOrContract,
     };
 
@@ -261,8 +266,22 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
                 type="text"
                 value={payerName}
                 onChange={(e) => setPayerName(e.target.value)}
-                placeholder="Ex: DANIEL SOUZA DE ANDRADE"
+                placeholder="Nome completo do pagador"
                 className="w-full px-3.5 py-2 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl text-xs font-medium text-neutral-900 outline-hidden transition-colors"
+              />
+            </div>
+
+            {/* CPF do Pagador */}
+            <div>
+              <label className="block text-xs font-semibold text-neutral-600 mb-1">
+                CPF do Pagador
+              </label>
+              <input
+                type="text"
+                value={payerCpf}
+                onChange={(e) => setPayerCpf(e.target.value)}
+                placeholder="000.000.000-00"
+                className="w-full px-3.5 py-2 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl font-mono text-xs text-neutral-900 outline-hidden transition-colors"
               />
             </div>
 
@@ -276,7 +295,7 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
                 type="text"
                 value={unitOrContract}
                 onChange={(e) => setUnitOrContract(e.target.value)}
-                placeholder="Ex: 2.914.381.013-63"
+                placeholder="Ex: 2.105.447.013-05"
                 className="w-full px-3.5 py-2 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl font-mono text-xs text-neutral-900 outline-hidden transition-colors"
               />
             </div>

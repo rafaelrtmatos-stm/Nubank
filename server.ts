@@ -71,12 +71,12 @@ REGRAS CRÍTICAS:
 9. "agency": Agência do recebedor (se informada).
 10. "account": Conta corrente do recebedor (se informada).`;
 
-      // Candidate models in order of priority (starting with ultra-fast gemini-3.1-flash-lite)
+      // Candidate models starting with ultra-responsive 3.5 & flash-lite
       const candidateModels = [
-        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-flash-lite-latest",
         "gemini-3.8-flash",
         "gemini-flash-latest",
-        "gemini-3.1-pro-preview"
       ];
 
       let lastError: any = null;
@@ -193,19 +193,19 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
 1. "beneficiaryName": Nome da empresa beneficiária / concessionária (ex: "EQUATORIAL PARÁ DISTRIB. DE ENERGIA S.A.", "ENEL DISTRIBUIÇÃO", "BANCO DO BRASIL S.A."). Procure no cabeçalho ou no campo BENEFICIÁRIO.
 2. "beneficiaryCnpj": CNPJ da empresa beneficiária se constar no documento (ex: "04.895.728/0001-80").
 3. "beneficiaryBank": Nome do banco emissor ou cobrador (ex: "BANCO DO BRASIL S.A." para código 001-9, "BCO BRADESCO S.A.", "ITAU UNIBANCO S.A.", "CAIXA ECONOMICA FEDERAL", etc.).
-4. "amount": Valor total a pagar em reais como número decimal (ex: para "R$ 879,74", retorne 879.74). NUNCA confunda com débitos anteriores ou juros parciais! Procure no campo "Total a Pagar", "VALOR DOCUMENTO", "VALOR COBRADO" ou nos últimos 10 dígitos da linha digitável.
-5. "dueDate": Data de vencimento no formato DD/MM/AAAA ou DD.MM.AAAA (ex: "20/07/2026"). NUNCA confunda com data de leitura anterior, data de corte ou emissão.
-6. "barcodeNumber": Linha digitável completa com pontos e espaços (ex: "00190.00009 03373.384266 60612.719173 1 00000000087974").
-7. "nossoNumero": Código Nosso Número do boleto se presente (ex: "33733842660612719").
-8. "payerName": Nome completo do pagador / titular da conta (ex: "DANIEL SOUZA DE ANDRADE").
-9. "payerCpf": CPF ou CNPJ do pagador/titular (ex: "950.246.202-59" ou "***.246.20*-**").
-10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.914.381.013-63").`;
+4. "amount": Valor total a pagar em reais como número decimal (ex: para "R$ 534,45", retorne 534.45). NUNCA confunda com juros parciais ou parcelas! Procure no campo "Total a Pagar", "VALOR DOCUMENTO", "VALOR COBRADO" ou nos últimos 10 dígitos da linha digitável.
+5. "dueDate": Data de vencimento no formato DD/MM/AAAA ou DD.MM.AAAA (ex: "17/08/2026"). NUNCA confunda com data de leitura, corte ou emissão.
+6. "barcodeNumber": Linha digitável completa com pontos e espaços (ex: "00190.00009 03373.384258 60492.231174 1 00000000053445").
+7. "nossoNumero": Código Nosso Número do boleto se presente (ex: "33733842560492231").
+8. "payerName": Nome completo do pagador / titular da conta (ex: "RAFAEL TAVARES MATOS").
+9. "payerCpf": CPF ou CNPJ do pagador/titular se presente (ex: "025.803.262-60").
+10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.105.447.013-05").`;
 
       const candidateModels = [
-        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash",
+        "gemini-flash-lite-latest",
         "gemini-3.8-flash",
         "gemini-flash-latest",
-        "gemini-3.1-pro-preview"
       ];
 
       let lastError: any = null;
@@ -249,14 +249,13 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
                   payerCpf: { type: Type.STRING, description: "CPF ou documento do pagador" },
                   unitOrContract: { type: Type.STRING, description: "Unidade consumidora ou instalação" },
                 },
-                required: ["beneficiaryName", "amount", "dueDate"],
               },
             },
           });
 
           const parsedText = response.text?.trim() || "{}";
           const parsed = JSON.parse(parsedText);
-          if (parsed && (parsed.beneficiaryName || parsed.amount)) {
+          if (parsed && (parsed.beneficiaryName || parsed.amount || parsed.barcodeNumber)) {
             console.log(`[Bill Extraction] Sucesso com modelo ${modelName}:`, parsed.beneficiaryName, `R$ ${parsed.amount}`, `Venc: ${parsed.dueDate}`);
             resultData = parsed;
             break;
@@ -274,9 +273,39 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
         });
       }
 
+      // Se a IA do Gemini estiver temporariamente indisponível (503 ou limite), tenta extrair o texto do PDF no servidor
+      try {
+        const buffer = Buffer.from(cleanBase64, "base64");
+        // Import dynamically to avoid top-level load issues
+        // @ts-ignore
+        const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+        const doc = await pdfjsLib.getDocument({
+          data: new Uint8Array(buffer),
+          useSystemFonts: true,
+        }).promise;
+
+        let pdfText = "";
+        for (let p = 1; p <= doc.numPages; p++) {
+          const page = await doc.getPage(p);
+          const tc = await page.getTextContent();
+          pdfText += " " + tc.items.map((it: any) => it.str || "").join(" ");
+        }
+
+        if (pdfText.trim().length > 30) {
+          console.log("[Bill Extraction] Extração de texto do PDF realizada com sucesso no servidor.");
+          return res.json({
+            success: true,
+            extractedServerText: pdfText,
+            fallback: false,
+          });
+        }
+      } catch (pdfDecodeErr) {
+        console.warn("[Bill Extraction] Fallback de texto do PDF no servidor falhou:", pdfDecodeErr);
+      }
+
       throw lastError || new Error("Não foi possível extrair os dados da fatura.");
     } catch (err: any) {
-      console.error("Erro no Gemini ao processar fatura:", err);
+      console.error("Erro ao processar fatura:", err);
       return res.status(200).json({
         success: false,
         fallback: true,

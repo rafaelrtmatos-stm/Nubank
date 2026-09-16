@@ -48,6 +48,7 @@ export interface TransferData {
   transactionId?: string;
   receiptDateFormatted?: string;
   payerName?: string;
+  payerCpf?: string;
   unitOrContract?: string;
 }
 
