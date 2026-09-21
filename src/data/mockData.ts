@@ -183,35 +183,35 @@ export function generateRandomContacts(count = 12): Contact[] {
 }
 
 /**
- * Gera dinamicamente um histórico de extrato bancário realista e diversificado.
+ * Gera datas relativas realistas para o extrato (Hoje, Ontem, ou DD MMM).
+ */
+function getRelativeDateStr(daysAgo: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = months[d.getMonth()];
+  const hh = String(randomInt(8, 20)).padStart(2, '0');
+  const mm = String(randomInt(10, 58)).padStart(2, '0');
+  if (daysAgo === 0) return `Hoje, ${hh}:${mm}`;
+  if (daysAgo === 1) return `Ontem, ${hh}:${mm}`;
+  return `${day} ${month}`;
+}
+
+/**
+ * Gera dinamicamente um histórico de extrato bancário realista, 100% fictício e diversificado.
  * Nenhum valor ou nome é fixo, garantindo extrato único a cada novo acesso.
  */
 export function generateRandomTransactions(count = 14): Transaction[] {
   const transactions: Transaction[] = [];
-
-  const timeTemplates = [
-    'Hoje, 15:42',
-    'Hoje, 14:18',
-    'Hoje, 11:35',
-    'Hoje, 09:20',
-    'Ontem, 18:40',
-    'Ontem, 16:15',
-    'Ontem, 10:05',
-    '07 SET',
-    '06 SET',
-    '05 SET',
-    '04 SET',
-    '03 SET',
-    '02 SET',
-    '01 SET',
-    '31 AGO',
-    '30 AGO'
-  ];
+  const now = new Date();
+  const ymd = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 
   for (let i = 0; i < count; i++) {
     const roll = Math.random();
-    const date = timeTemplates[i] || `${Math.max(1, 30 - i)} AGO`;
-    const uniqueId = `E${randomInt(100000, 999999)}20260907${randomInt(100000, 999999)}s${Math.random().toString(36).substring(2, 10)}`;
+    const daysAgo = Math.floor(i / 1.7);
+    const date = getRelativeDateStr(daysAgo);
+    const uniqueId = `E${randomInt(100000, 999999)}${ymd}${randomInt(100000, 999999)}s${Math.random().toString(36).substring(2, 10)}`;
 
     if (roll < 0.45) {
       // Pix Recebido (Entrada positiva)
@@ -317,11 +317,11 @@ export function generateFreshAppData(): AppCustomData {
     pixAutoCreditBalance: true,
 
     contacts: [],
-    transactions: [],
+    transactions: generateRandomTransactions(14),
   };
 }
 
 // Retrocompatibilidade para referências existentes
 export const INITIAL_CONTACTS: Contact[] = [];
-export const INITIAL_TRANSACTIONS: Transaction[] = [];
+export const INITIAL_TRANSACTIONS: Transaction[] = generateRandomTransactions(14);
 export const DEFAULT_APP_DATA: AppCustomData = generateFreshAppData();

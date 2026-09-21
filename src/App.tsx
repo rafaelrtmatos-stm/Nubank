@@ -22,6 +22,7 @@ import { AppCustomData, Contact, ScreenName, Transaction, TransferData, ActivePi
 import { 
   DEFAULT_APP_DATA, 
   generateFreshAppData,
+  generateRandomTransactions,
 } from './data/mockData';
 import { playPixNotificationSound } from './utils/audio';
 import { 
@@ -30,7 +31,7 @@ import {
 } from './utils/nativeNotification';
 import { CheckCircle2, Sliders, Edit3, ArrowDownLeft } from 'lucide-react';
 
-const STORAGE_KEY = 'nu_empresas_custom_data_v4';
+const STORAGE_KEY = 'nu_empresas_custom_data_v5';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<ScreenName>('Splash');
@@ -42,11 +43,15 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
+        const loadedTransactions = (Array.isArray(parsed.transactions) && parsed.transactions.length >= 8)
+          ? parsed.transactions
+          : generateRandomTransactions(14);
+
         return {
           ...generateFreshAppData(),
           ...parsed,
           contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
-          transactions: Array.isArray(parsed.transactions) ? parsed.transactions : [],
+          transactions: loadedTransactions,
         };
       }
     } catch (e) {
@@ -121,7 +126,19 @@ export default function App() {
     setIsBalanceVisible(true);
     setSkipIntro(false);
     localStorage.removeItem(STORAGE_KEY);
-    showToast('Dados redefinidos e zerados com sucesso!');
+    showToast('Dados redefinidos com novo extrato aleatório!');
+  };
+
+  const handleRegenerateTransactions = () => {
+    const freshTransactions = generateRandomTransactions(14);
+    setAppData((prev) => {
+      const updated = { ...prev, transactions: freshTransactions };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    showToast('Extrato atualizado com novas transações fictícias!');
   };
 
   // Trigger Pix Receive Simulation
@@ -523,6 +540,7 @@ export default function App() {
                   setActiveTransfer(transfer);
                   navigateTo('Receipt');
                 }}
+                onRegenerateTransactions={handleRegenerateTransactions}
               />
             </motion.div>
           )}

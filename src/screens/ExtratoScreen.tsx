@@ -19,7 +19,8 @@ import {
   Calendar,
   Building2,
   Lock,
-  Receipt
+  Receipt,
+  Dices
 } from 'lucide-react';
 import { AppCustomData, ScreenName, Transaction, TransferData } from '../types';
 import { NuReceiptLogo } from '../components/NuReceiptLogo';
@@ -31,6 +32,7 @@ interface ExtratoScreenProps {
   onGoBack: () => void;
   onNavigate: (screen: ScreenName) => void;
   onViewReceipt?: (transferData: TransferData) => void;
+  onRegenerateTransactions?: () => void;
 }
 
 export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
@@ -40,6 +42,7 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
   onGoBack,
   onNavigate,
   onViewReceipt,
+  onRegenerateTransactions,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'in' | 'out' | 'pix' | 'bill'>('all');
@@ -125,6 +128,16 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
         </h1>
 
         <div className="flex items-center gap-1">
+          {onRegenerateTransactions && (
+            <button
+              onClick={onRegenerateTransactions}
+              className="w-10 h-10 rounded-full hover:bg-neutral-100 active:scale-95 flex items-center justify-center text-neutral-800 transition-all cursor-pointer"
+              title="Gerar novo extrato aleatório"
+              aria-label="Gerar novo extrato aleatório"
+            >
+              <Dices className="w-5 h-5 text-[#820AD1]" />
+            </button>
+          )}
           <button
             onClick={onToggleBalance}
             className="w-10 h-10 rounded-full hover:bg-neutral-100 active:scale-95 flex items-center justify-center text-neutral-800 transition-all cursor-pointer"
@@ -240,9 +253,21 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
           <h2 className="text-base font-bold text-neutral-900">
             Histórico da conta
           </h2>
-          <span className="text-xs text-neutral-400 font-medium">
-            {filteredTransactions.length} {filteredTransactions.length === 1 ? 'movimentação' : 'movimentações'}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-400 font-medium">
+              {filteredTransactions.length} {filteredTransactions.length === 1 ? 'movimentação' : 'movimentações'}
+            </span>
+            {onRegenerateTransactions && (
+              <button
+                onClick={onRegenerateTransactions}
+                title="Sortear novas movimentações aleatórias"
+                className="flex items-center gap-1 text-[11px] font-semibold text-[#820AD1] bg-purple-50 hover:bg-purple-100 active:scale-95 px-2.5 py-1 rounded-lg transition-all cursor-pointer"
+              >
+                <Dices className="w-3.5 h-3.5" />
+                <span>Aleatório</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Search Input */}
@@ -346,15 +371,26 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
           {filteredTransactions.length === 0 && (
             <div className="py-12 text-center text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 p-6">
               <p className="text-xs font-medium">Nenhuma transação encontrada para os filtros selecionados.</p>
-              <button
-                onClick={() => {
-                  setSelectedFilter('all');
-                  setSearchQuery('');
-                }}
-                className="mt-2 text-xs text-[#820AD1] font-semibold underline cursor-pointer"
-              >
-                Limpar filtros de busca
-              </button>
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  onClick={() => {
+                    setSelectedFilter('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-xs text-[#820AD1] font-semibold underline cursor-pointer"
+                >
+                  Limpar filtros
+                </button>
+                {onRegenerateTransactions && (
+                  <button
+                    onClick={onRegenerateTransactions}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#820AD1] text-white text-xs font-bold rounded-xl active:scale-95 shadow-xs transition-all cursor-pointer"
+                  >
+                    <Dices className="w-3.5 h-3.5" />
+                    <span>Gerar Extrato Fictício</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
         </div>

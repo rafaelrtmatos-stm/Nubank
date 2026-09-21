@@ -71,12 +71,12 @@ REGRAS CRÍTICAS:
 9. "agency": Agência do recebedor (se informada).
 10. "account": Conta corrente do recebedor (se informada).`;
 
-      // Candidate models starting with ultra-responsive 3.5 & flash-lite
+      // Officially supported Gemini models prioritized for stability and multimodal vision
       const candidateModels = [
-        "gemini-3.5-flash",
-        "gemini-flash-lite-latest",
         "gemini-3.8-flash",
+        "gemini-3.1-flash-lite",
         "gemini-flash-latest",
+        "gemini-2.5-flash",
       ];
 
       let lastError: any = null;
@@ -135,7 +135,14 @@ REGRAS CRÍTICAS:
             break;
           }
         } catch (err: any) {
-          console.warn(`[Receipt Extraction] Modelo ${modelName} falhou:`, err.message || err);
+          const errMsg = err?.message || String(err);
+          const isHighDemand = errMsg.includes("503") || errMsg.includes("UNAVAILABLE") || errMsg.includes("high demand");
+          if (isHighDemand) {
+            console.log(`[Receipt Extraction] Modelo ${modelName} em alta demanda (503). Alternando para o próximo modelo...`);
+            await new Promise((r) => setTimeout(r, 250));
+          } else {
+            console.log(`[Receipt Extraction] Modelo ${modelName} indisponível: ${errMsg.substring(0, 100)}`);
+          }
           lastError = err;
           // Continue to next candidate model
         }
@@ -148,9 +155,14 @@ REGRAS CRÍTICAS:
         });
       }
 
-      throw lastError || new Error("Não foi possível extrair os dados do comprovante com os modelos disponíveis.");
+      console.log("[Receipt Extraction] Modelos remotos indisponíveis, ativando fallback local.");
+      return res.status(200).json({
+        success: false,
+        fallback: true,
+        message: "IA temporariamente ocupada, alternando para extrator local.",
+      });
     } catch (err: any) {
-      console.error("Erro no Gemini ao processar comprovante:", err);
+      console.log("[Receipt Extraction] Tratamento com extrator local acionado.");
       return res.status(200).json({
         success: false,
         fallback: true,
@@ -197,15 +209,16 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
 5. "dueDate": Data de vencimento no formato DD/MM/AAAA ou DD.MM.AAAA (ex: "17/08/2026"). NUNCA confunda com data de leitura, corte ou emissão.
 6. "barcodeNumber": Linha digitável completa com pontos e espaços (ex: "00190.00009 03373.384258 60492.231174 1 00000000053445").
 7. "nossoNumero": Código Nosso Número do boleto se presente (ex: "33733842560492231").
-8. "payerName": Nome completo do pagador / titular da conta (ex: "RAFAEL TAVARES MATOS").
+8. "payerName": Nome completo do pagador / titular da conta (ex: "JOÃO CARLOS DA SILVA").
 9. "payerCpf": CPF ou CNPJ do pagador/titular se presente (ex: "025.803.262-60").
 10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.105.447.013-05").`;
 
+      // Officially supported Gemini models prioritized for stability and multimodal vision
       const candidateModels = [
-        "gemini-3.5-flash",
-        "gemini-flash-lite-latest",
         "gemini-3.8-flash",
+        "gemini-3.1-flash-lite",
         "gemini-flash-latest",
+        "gemini-2.5-flash",
       ];
 
       let lastError: any = null;
@@ -261,7 +274,14 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
             break;
           }
         } catch (err: any) {
-          console.warn(`[Bill Extraction] Modelo ${modelName} falhou:`, err.message || err);
+          const errMsg = err?.message || String(err);
+          const isHighDemand = errMsg.includes("503") || errMsg.includes("UNAVAILABLE") || errMsg.includes("high demand");
+          if (isHighDemand) {
+            console.log(`[Bill Extraction] Modelo ${modelName} em alta demanda temporária (503). Alternando para o próximo modelo...`);
+            await new Promise((r) => setTimeout(r, 250));
+          } else {
+            console.log(`[Bill Extraction] Modelo ${modelName} indisponível: ${errMsg.substring(0, 100)}`);
+          }
           lastError = err;
         }
       }
@@ -300,12 +320,17 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
           });
         }
       } catch (pdfDecodeErr) {
-        console.warn("[Bill Extraction] Fallback de texto do PDF no servidor falhou:", pdfDecodeErr);
+        console.log("[Bill Extraction] Fallback de texto do PDF no servidor tentado.");
       }
 
-      throw lastError || new Error("Não foi possível extrair os dados da fatura.");
+      console.log("[Bill Extraction] IA temporariamente indisponível. Alternando para o extrator local.");
+      return res.status(200).json({
+        success: false,
+        fallback: true,
+        message: "IA temporariamente ocupada, acionando extrator local de alta precisão.",
+      });
     } catch (err: any) {
-      console.error("Erro ao processar fatura:", err);
+      console.log("[Bill Extraction] Tratamento com extrator local acionado.");
       return res.status(200).json({
         success: false,
         fallback: true,
