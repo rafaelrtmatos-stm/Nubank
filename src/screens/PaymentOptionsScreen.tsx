@@ -125,7 +125,7 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
       <input 
         ref={fileInputRef}
         type="file"
-        accept="application/pdf,image/*"
+        accept="application/pdf,image/*,.pdf"
         onChange={handleFileUpload}
         className="hidden"
         id="payment-upload-pdf-input"
@@ -419,7 +419,6 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
       {/* Modal de Confirmação e Edição dos Dados do Boleto */}
       {isConfirmationModalOpen && uploadedBillData && (
         <BillConfirmationModal
-          key={`${uploadedFileName}-${uploadedBillData.amount}-${Date.now()}`}
           isOpen={isConfirmationModalOpen}
           extractedData={uploadedBillData}
           fileName={uploadedFileName}

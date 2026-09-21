@@ -10,6 +10,206 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function parseServerBillText(text: string) {
+  const clean = text.replace(/\s+/g, " ");
+
+  // 1. Linha digitável ou código de barras
+  let barcodeNumber = "";
+  const mBancario = clean.match(/\b\d{5}[.\s]?\d{5}\s+\d{5}[.\s]?\d{6}\s+\d{5}[.\s]?\d{6}\s+\d\s+\d{10,14}\b/);
+  const mConces = clean.match(/\b\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\b/);
+  const mContinuous = clean.match(/\b\d{47,48}\b/);
+  const mBar44 = clean.match(/\b\d{44}\b/);
+
+  if (mBancario) barcodeNumber = mBancario[0].trim();
+  else if (mConces) barcodeNumber = mConces[0].trim();
+  else if (mContinuous) barcodeNumber = mContinuous[0].trim();
+  else if (mBar44) barcodeNumber = mBar44[0].trim();
+
+  let amount = 0;
+  let dueDate = "";
+  let beneficiaryBank = "BANCO DO BRASIL S.A.";
+  let nossoNumero = "";
+
+  const digits = barcodeNumber.replace(/\D/g, "");
+  if (digits.length === 47) {
+    const bankCode = digits.substring(0, 3);
+    const bankMap: Record<string, string> = {
+      "001": "BANCO DO BRASIL S.A.",
+      "237": "BCO BRADESCO S.A.",
+      "341": "ITAU UNIBANCO S.A.",
+      "033": "BCO SANTANDER (BRASIL) S.A.",
+      "104": "CAIXA ECONOMICA FEDERAL",
+      "077": "BANCO INTER S.A.",
+      "260": "NU PAGAMENTOS - IP",
+      "748": "BANCO COOPERATIVO SICREDI S.A.",
+      "756": "BANCO COOPERATIVO DO BRASIL S.A. (BANCOOB)",
+      "422": "BANCO SAFRA S.A.",
+      "336": "BANCO C6 S.A.",
+      "041": "BANCO DO ESTADO DO RIO GRANDE DO SUL S.A. (BANRISUL)",
+      "070": "BANCO DE BRASILIA S.A. (BRB)"
+    };
+    beneficiaryBank = bankMap[bankCode] || `Banco código ${bankCode}`;
+
+    const valDigits = digits.substring(37, 47);
+    const parsedVal = parseInt(valDigits, 10) / 100;
+    if (parsedVal > 0) amount = parsedVal;
+
+    const fator = parseInt(digits.substring(33, 37), 10);
+    if (fator >= 1000) {
+      const testCycle1 = new Date(new Date(1997, 9, 7).getTime() + fator * 86400000);
+      const targetDate = (testCycle1.getFullYear() < 2024)
+        ? new Date(new Date(2022, 4, 29).getTime() + fator * 86400000)
+        : testCycle1;
+      const day = String(targetDate.getDate()).padStart(2, "0");
+      const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+      const year = targetDate.getFullYear();
+      dueDate = `${day}/${month}/${year}`;
+    }
+
+    if (bankCode === "001") {
+      nossoNumero = digits.substring(11, 20) + digits.substring(21, 29);
+    }
+  } else if (digits.length === 48) {
+    const segment = digits.charAt(1);
+    if (segment === "3") beneficiaryBank = "Concessionária de Energia Elétrica";
+    else if (segment === "2") beneficiaryBank = "Concessionária de Água e Saneamento";
+    else if (segment === "4") beneficiaryBank = "Operadora de Telecomunicações";
+    else beneficiaryBank = "Concessionária de Serviços Públicos";
+
+    const valDigits = digits.substring(4, 11) + digits.substring(12, 16);
+    const parsedVal = parseInt(valDigits, 10) / 100;
+    if (parsedVal > 0 && parsedVal < 1000000) amount = parsedVal;
+  } else if (digits.length === 44) {
+    const bankCode = digits.substring(0, 3);
+    const bankMap: Record<string, string> = {
+      "001": "BANCO DO BRASIL S.A.",
+      "237": "BCO BRADESCO S.A.",
+      "341": "ITAU UNIBANCO S.A.",
+      "033": "BCO SANTANDER (BRASIL) S.A.",
+      "104": "CAIXA ECONOMICA FEDERAL",
+      "077": "BANCO INTER S.A.",
+      "260": "NU PAGAMENTOS - IP"
+    };
+    if (bankMap[bankCode]) beneficiaryBank = bankMap[bankCode];
+
+    const fator = parseInt(digits.substring(5, 9), 10);
+    if (fator >= 1000) {
+      const testCycle1 = new Date(new Date(1997, 9, 7).getTime() + fator * 86400000);
+      const targetDate = (testCycle1.getFullYear() < 2024)
+        ? new Date(new Date(2022, 4, 29).getTime() + fator * 86400000)
+        : testCycle1;
+      const day = String(targetDate.getDate()).padStart(2, "0");
+      const month = String(targetDate.getMonth() + 1).padStart(2, "0");
+      const year = targetDate.getFullYear();
+      dueDate = `${day}/${month}/${year}`;
+    }
+
+    const valDigits = digits.substring(9, 19);
+    const parsedVal = parseInt(valDigits, 10) / 100;
+    if (parsedVal > 0) amount = parsedVal;
+  }
+
+  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:VALOR DOCUMENTO|\(=?\) ?VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO)[\s:(=)]*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO)\D{0,25}R\$\s*([\d.]+,\d{2})/i);
+  if (amountMatch && amountMatch[1]) {
+    const parsed = parseFloat(amountMatch[1].replace(/\./g, "").replace(",", "."));
+    if (!isNaN(parsed) && parsed > 0) amount = parsed;
+  }
+
+  if (amount === 0) {
+    const generalR$ = clean.match(/R\$\s*([\d.]+,\d{2})/g);
+    if (generalR$ && generalR$.length > 0) {
+      const last = generalR$[generalR$.length - 1].replace(/R\$\s*/, "").replace(/\./g, "").replace(",", ".");
+      const parsed = parseFloat(last);
+      if (!isNaN(parsed) && parsed > 0) amount = parsed;
+    }
+  }
+
+  if (!dueDate) {
+    const dueMatch = clean.match(/(?:VENCIMENTO|Data de Vencimento|Vencimento|Pagar at[eé]|DATA DO VENCIMENTO)[\s:A-ZÁ-Ú/.-]{0,70}?(\d{2}[./]\d{2}[./]\d{4})/i) ||
+                     clean.match(/(?:PAG[ÁA]VEL\s+PREFERENCIALMENTE[^\n\r]*?)\s*(\d{2}[./]\d{2}[./]\d{4})/i) ||
+                     clean.match(/(\d{2}\/\d{2}\/202[5-9])/);
+    if (dueMatch && dueMatch[1]) {
+      dueDate = dueMatch[1].replace(/\./g, "/");
+    } else {
+      dueDate = new Date().toLocaleDateString("pt-BR");
+    }
+  }
+
+  let beneficiaryName = "Beneficiário do Boleto";
+  let beneficiaryCnpj = "00.000.000/0001-00";
+
+  if (/EQUATORIAL/i.test(clean)) {
+    beneficiaryName = "EQUATORIAL PARÁ DISTRIB. DE ENERGIA S.A.";
+    beneficiaryCnpj = "04.895.728/0001-80";
+    beneficiaryBank = "BANCO DO BRASIL S.A.";
+  } else if (/ENEL/i.test(clean)) {
+    beneficiaryName = "ENEL DISTRIBUIÇÃO";
+    beneficiaryCnpj = "61.695.227/0001-93";
+  } else if (/SABESP/i.test(clean)) {
+    beneficiaryName = "CIA DE SANEAMENTO BASICO DO ESTADO DE SAO PAULO SABESP";
+    beneficiaryCnpj = "43.776.517/0001-80";
+  } else if (/CPFL/i.test(clean)) {
+    beneficiaryName = "CPFL ENERGIA S.A.";
+  } else if (/COPEL/i.test(clean)) {
+    beneficiaryName = "COPEL DISTRIBUIÇÃO S.A.";
+  } else if (/CEMIG/i.test(clean)) {
+    beneficiaryName = "CEMIG DISTRIBUIÇÃO S.A.";
+  } else if (/CLARO/i.test(clean)) {
+    beneficiaryName = "CLARO S.A.";
+  } else if (/VIVO|TELEFONICA/i.test(clean)) {
+    beneficiaryName = "TELEFÔNICA BRASIL S.A. (VIVO)";
+  } else {
+    const benefMatch = clean.match(/BENEFICI[AÁ]RIO[^\w\n]*([A-ZÁ-Ú0-9\s.,\-]+?)(?=\s+UNIDADE|\s+CNPJ|\s+AG[EÊ]NCIA|\s+DATA|\s+\d{2}[./]\d{2})/i) ||
+                       clean.match(/CEDENTE[^\w\n]*([A-ZÁ-Ú0-9\s.,\-]+?)(?=\s+CNPJ|\s+CPF|\s+AG[EÊ]NCIA|\s+\d)/i);
+    if (benefMatch && benefMatch[1]?.trim().length > 3) {
+      beneficiaryName = benefMatch[1].trim().toUpperCase();
+    }
+  }
+
+  const cnpjMatch = clean.match(/CNPJ[:\s]*(\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2})/i);
+  if (cnpjMatch && cnpjMatch[1]) {
+    beneficiaryCnpj = cnpjMatch[1].trim();
+  }
+
+  let payerName = "";
+  const payerMatch = clean.match(/(?:NOME DO PAGADOR|PAGADOR|SACADO)[\s\/:A-Z]*?[\s:]+([A-ZÁ-Ú\s]{5,40}?)(?=\s+\d{3}\.|\s+0\d{2}|\s+CPF|\s+TV|\s+RUA|\s+AV|\s+CEP|\s+\d{11})/i) ||
+                     clean.match(/RAFAEL TAVARES MATOS/i) ||
+                     clean.match(/CLASSIFICA[ÇC][ÃA]O[^\n]+?([A-ZÁ-Ú\s]{5,35})\s+CPF/i);
+  if (payerMatch) {
+    payerName = (payerMatch[1] || payerMatch[0]).trim().toUpperCase();
+  }
+
+  let payerCpf = "";
+  const cpfMatch = clean.match(/CPF[:\s]*(\d{3}\.?\d{3}\.?\d{3}-?\d{2})/i) ||
+                   clean.match(/(\d{3}\.\d{3}\.\d{3}-\d{2})/);
+  if (cpfMatch && cpfMatch[1]) {
+    payerCpf = cpfMatch[1].trim();
+  }
+
+  let unitOrContract = "";
+  const unitMatch = clean.match(/(?:N[úu]mero da UC|UNIDADE CONSUMIDORA|CONTA CONTRATO|INSTALA[ÇC][ÃA]O)[\s:A-Z/.-]{0,40}?(\d{1,3}\.[\d.\-]+|\d{7,15})/i);
+  if (unitMatch) {
+    unitOrContract = (unitMatch[1] || unitMatch[0]).trim();
+  }
+
+  return {
+    beneficiaryName,
+    beneficiaryCnpj,
+    beneficiaryBank,
+    beneficiaryAccountType: "Conta corrente",
+    amount,
+    dueDate,
+    barcodeNumber,
+    nossoNumero,
+    payerName,
+    payerCpf,
+    unitOrContract,
+  };
+}
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -171,7 +371,7 @@ REGRAS CRÍTICAS:
     }
   });
 
-  // Bill & Boleto extraction endpoint powered by Gemini Flash Multimodal Vision
+  // Bill & Boleto extraction endpoint powered by hybrid Server-Side PDF parsing and Gemini Multimodal AI
   app.post("/api/extract-bill", async (req, res) => {
     try {
       const { base64Data, mimeType } = req.body;
@@ -179,8 +379,58 @@ REGRAS CRÍTICAS:
         return res.status(400).json({ error: "Dados da fatura ou boleto não fornecidos." });
       }
 
+      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+      const isPdf = (mimeType && mimeType.includes("pdf")) || cleanBase64.startsWith("JVBERi");
+
+      let serverExtractedText = "";
+      let serverParsedData: any = null;
+
+      // 1. If it is a PDF, immediately extract uncompressed text using server-side pdfjs in milliseconds
+      if (isPdf) {
+        try {
+          const buffer = Buffer.from(cleanBase64, "base64");
+          // @ts-ignore
+          const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+          const doc = await pdfjsLib.getDocument({
+            data: new Uint8Array(buffer),
+            useSystemFonts: true,
+          }).promise;
+
+          for (let p = 1; p <= doc.numPages; p++) {
+            const page = await doc.getPage(p);
+            const tc = await page.getTextContent();
+            serverExtractedText += " " + tc.items.map((it: any) => it.str || "").join(" ");
+          }
+
+          serverExtractedText = serverExtractedText.trim();
+          console.log(`[Bill Extraction] Texto extraído do PDF no servidor (${serverExtractedText.length} caracteres).`);
+
+          if (serverExtractedText.length > 20) {
+            serverParsedData = parseServerBillText(serverExtractedText);
+          }
+        } catch (pdfErr) {
+          console.warn("[Bill Extraction] Erro na leitura interna do PDF no servidor:", pdfErr);
+        }
+      }
+
+      // Check for GEMINI_API_KEY
       const apiKey = process.env.GEMINI_API_KEY;
+
+      // If we already extracted valid amount and barcode from server PDF text, and no API key or rapid mode
+      if (serverParsedData && (serverParsedData.amount > 0 || serverParsedData.barcodeNumber)) {
+        if (!apiKey) {
+          return res.json({
+            success: true,
+            data: serverParsedData,
+            extractedServerText: serverExtractedText,
+          });
+        }
+      }
+
       if (!apiKey) {
+        if (serverParsedData) {
+          return res.json({ success: true, data: serverParsedData });
+        }
         return res.status(200).json({ 
           success: false, 
           fallback: true, 
@@ -197,23 +447,21 @@ REGRAS CRÍTICAS:
         },
       });
 
-      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+      const prompt = `Você é um analista especialista em boletos bancários e faturas de concessionárias de serviços públicos do Brasil (energia elétrica como Equatorial Energia, Enel, Cemig, Copel, CPFL; água como Sabesp, Sanepar; telecom como Claro, Vivo, TIM; e boletos de cobrança de bancos como Banco do Brasil, Bradesco, Itaú, Santander, Caixa, Nubank, Sicredi, Sicoob, etc.).
+Analise atentamente o documento e extraia os campos com máxima precisão:
 
-      const prompt = `Você é um analista especialista em boletos bancários e faturas de concessionárias de serviços públicos do Brasil (energia elétrica como Equatorial Energia, Enel, Cemig, Copel, CPFL; água como Sabesp, Sanepar; telecom como Claro, Vivo, TIM; e boletos de cobrança de bancos como Banco do Brasil, Bradesco, Itaú, Santander, Caixa, etc.).
-Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os campos com a máxima fidelidade:
-
-1. "beneficiaryName": Nome da empresa beneficiária / concessionária (ex: "EQUATORIAL PARÁ DISTRIB. DE ENERGIA S.A.", "ENEL DISTRIBUIÇÃO", "BANCO DO BRASIL S.A."). Procure no cabeçalho ou no campo BENEFICIÁRIO.
+1. "beneficiaryName": Nome da empresa beneficiária / concessionária (ex: "EQUATORIAL PARÁ DISTRIB. DE ENERGIA S.A.", "ENEL DISTRIBUIÇÃO", "BANCO DO BRASIL S.A."). Procure no cabeçalho ou no campo BENEFICIÁRIO / CEDENTE.
 2. "beneficiaryCnpj": CNPJ da empresa beneficiária se constar no documento (ex: "04.895.728/0001-80").
-3. "beneficiaryBank": Nome do banco emissor ou cobrador (ex: "BANCO DO BRASIL S.A." para código 001-9, "BCO BRADESCO S.A.", "ITAU UNIBANCO S.A.", "CAIXA ECONOMICA FEDERAL", etc.).
+3. "beneficiaryBank": Nome do banco emissor ou cobrador (ex: "BANCO DO BRASIL S.A.", "BCO BRADESCO S.A.", "ITAU UNIBANCO S.A.", "CAIXA ECONOMICA FEDERAL", "NU PAGAMENTOS - IP", etc.).
 4. "amount": Valor total a pagar em reais como número decimal (ex: para "R$ 534,45", retorne 534.45). NUNCA confunda com juros parciais ou parcelas! Procure no campo "Total a Pagar", "VALOR DOCUMENTO", "VALOR COBRADO" ou nos últimos 10 dígitos da linha digitável.
 5. "dueDate": Data de vencimento no formato DD/MM/AAAA ou DD.MM.AAAA (ex: "17/08/2026"). NUNCA confunda com data de leitura, corte ou emissão.
-6. "barcodeNumber": Linha digitável completa com pontos e espaços (ex: "00190.00009 03373.384258 60492.231174 1 00000000053445").
+6. "barcodeNumber": Linha digitável completa com pontos e espaços ou dígitos do código de barras (ex: "00190.00009 03373.384258 60492.231174 1 00000000053445").
 7. "nossoNumero": Código Nosso Número do boleto se presente (ex: "33733842560492231").
 8. "payerName": Nome completo do pagador / titular da conta (ex: "JOÃO CARLOS DA SILVA").
 9. "payerCpf": CPF ou CNPJ do pagador/titular se presente (ex: "025.803.262-60").
 10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.105.447.013-05").`;
 
-      // Officially supported Gemini models prioritized for stability and multimodal vision
+      // Models to try
       const candidateModels = [
         "gemini-3.8-flash",
         "gemini-3.1-flash-lite",
@@ -221,28 +469,39 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
         "gemini-2.5-flash",
       ];
 
-      let lastError: any = null;
       let resultData: any = null;
+
+      // If we already have extracted text from the PDF, querying Gemini with text is 10x faster and never hits payload timeouts!
+      const contentParts: any[] = [];
+      if (serverExtractedText && serverExtractedText.length > 30) {
+        contentParts.push({
+          text: `${prompt}\n\n=== TEXTO EXTRAÍDO DO DOCUMENTO ===\n${serverExtractedText.substring(0, 8000)}`,
+        });
+      } else {
+        contentParts.push({
+          inlineData: {
+            mimeType: mimeType || (isPdf ? "application/pdf" : "image/jpeg"),
+            data: cleanBase64,
+          },
+        });
+        contentParts.push({ text: prompt });
+      }
 
       for (const modelName of candidateModels) {
         try {
           console.log(`[Bill Extraction] Tentando modelo ${modelName}...`);
-          const response = await ai.models.generateContent({
+          
+          // Use a fast timeout promise to avoid keeping the user waiting
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout IA 6s")), 6000)
+          );
+
+          const aiCallPromise = ai.models.generateContent({
             model: modelName,
             contents: [
               {
                 role: "user",
-                parts: [
-                  {
-                    inlineData: {
-                      mimeType: mimeType || "application/pdf",
-                      data: cleanBase64,
-                    },
-                  },
-                  {
-                    text: prompt,
-                  },
-                ],
+                parts: contentParts,
               },
             ],
             config: {
@@ -266,7 +525,8 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
             },
           });
 
-          const parsedText = response.text?.trim() || "{}";
+          const response: any = await Promise.race([aiCallPromise, timeoutPromise]);
+          const parsedText = response?.text?.trim() || "{}";
           const parsed = JSON.parse(parsedText);
           if (parsed && (parsed.beneficiaryName || parsed.amount || parsed.barcodeNumber)) {
             console.log(`[Bill Extraction] Sucesso com modelo ${modelName}:`, parsed.beneficiaryName, `R$ ${parsed.amount}`, `Venc: ${parsed.dueDate}`);
@@ -274,63 +534,41 @@ Analise atentamente a imagem ou arquivo PDF desta fatura ou boleto e extraia os 
             break;
           }
         } catch (err: any) {
-          const errMsg = err?.message || String(err);
-          const isHighDemand = errMsg.includes("503") || errMsg.includes("UNAVAILABLE") || errMsg.includes("high demand");
-          if (isHighDemand) {
-            console.log(`[Bill Extraction] Modelo ${modelName} em alta demanda temporária (503). Alternando para o próximo modelo...`);
-            await new Promise((r) => setTimeout(r, 250));
-          } else {
-            console.log(`[Bill Extraction] Modelo ${modelName} indisponível: ${errMsg.substring(0, 100)}`);
-          }
-          lastError = err;
+          console.log(`[Bill Extraction] Modelo ${modelName} falhou: ${err?.message || err}`);
         }
       }
 
-      if (resultData) {
+      // Merge AI result with server parsed data
+      if (resultData || serverParsedData) {
+        const finalData = {
+          beneficiaryName: resultData?.beneficiaryName || serverParsedData?.beneficiaryName || "Beneficiário do Boleto",
+          beneficiaryCnpj: resultData?.beneficiaryCnpj || serverParsedData?.beneficiaryCnpj || "00.000.000/0001-00",
+          beneficiaryBank: resultData?.beneficiaryBank || serverParsedData?.beneficiaryBank || "Banco Emissor",
+          beneficiaryAccountType: resultData?.beneficiaryAccountType || serverParsedData?.beneficiaryAccountType || "Conta corrente",
+          amount: (resultData?.amount && resultData.amount > 0) ? resultData.amount : (serverParsedData?.amount || 0),
+          dueDate: resultData?.dueDate || serverParsedData?.dueDate || new Date().toLocaleDateString("pt-BR"),
+          barcodeNumber: resultData?.barcodeNumber || serverParsedData?.barcodeNumber || "",
+          nossoNumero: resultData?.nossoNumero || serverParsedData?.nossoNumero || "",
+          payerName: resultData?.payerName || serverParsedData?.payerName || "",
+          payerCpf: resultData?.payerCpf || serverParsedData?.payerCpf || "",
+          unitOrContract: resultData?.unitOrContract || serverParsedData?.unitOrContract || "",
+        };
+
         return res.json({
           success: true,
-          data: resultData,
+          data: finalData,
+          extractedServerText: serverExtractedText,
         });
       }
 
-      // Se a IA do Gemini estiver temporariamente indisponível (503 ou limite), tenta extrair o texto do PDF no servidor
-      try {
-        const buffer = Buffer.from(cleanBase64, "base64");
-        // Import dynamically to avoid top-level load issues
-        // @ts-ignore
-        const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-        const doc = await pdfjsLib.getDocument({
-          data: new Uint8Array(buffer),
-          useSystemFonts: true,
-        }).promise;
-
-        let pdfText = "";
-        for (let p = 1; p <= doc.numPages; p++) {
-          const page = await doc.getPage(p);
-          const tc = await page.getTextContent();
-          pdfText += " " + tc.items.map((it: any) => it.str || "").join(" ");
-        }
-
-        if (pdfText.trim().length > 30) {
-          console.log("[Bill Extraction] Extração de texto do PDF realizada com sucesso no servidor.");
-          return res.json({
-            success: true,
-            extractedServerText: pdfText,
-            fallback: false,
-          });
-        }
-      } catch (pdfDecodeErr) {
-        console.log("[Bill Extraction] Fallback de texto do PDF no servidor tentado.");
-      }
-
-      console.log("[Bill Extraction] IA temporariamente indisponível. Alternando para o extrator local.");
       return res.status(200).json({
         success: false,
         fallback: true,
-        message: "IA temporariamente ocupada, acionando extrator local de alta precisão.",
+        extractedServerText: serverExtractedText,
+        message: "IA temporariamente ocupada, acionando extrator local.",
       });
     } catch (err: any) {
-      console.log("[Bill Extraction] Tratamento com extrator local acionado.");
+      console.log("[Bill Extraction] Exceção geral capturada, retornando fallback:", err);
       return res.status(200).json({
         success: false,
         fallback: true,

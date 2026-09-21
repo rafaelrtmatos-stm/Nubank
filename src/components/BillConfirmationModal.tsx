@@ -115,12 +115,16 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center select-none bg-black/60 backdrop-blur-xs p-0 sm:p-4">
+      <div 
+        onClick={onClose}
+        className="fixed inset-0 z-50 flex items-end sm:items-center justify-center select-none bg-black/60 backdrop-blur-sm p-0 sm:p-4"
+      >
         <motion.div
           initial={{ opacity: 0, y: '100%' }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: '100%' }}
           transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+          onClick={(e) => e.stopPropagation()}
           className="w-full max-w-md bg-white rounded-t-[28px] sm:rounded-3xl shadow-2xl flex flex-col max-h-[92vh] overflow-hidden"
         >
           {/* Header */}

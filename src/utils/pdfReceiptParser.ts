@@ -24,7 +24,7 @@ export interface ExtractedBillData {
 }
 
 /**
- * Decodes standard Brazilian linha digitável (47 dígitos de boleto bancário ou 48 dígitos de concessionária)
+ * Decodes standard Brazilian linha digitável (47 dígitos de boleto bancário, 48 dígitos de concessionária ou 44 dígitos de código de barras)
  */
 export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | null {
   const digits = raw.replace(/\D/g, '');
@@ -41,7 +41,11 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
       '077': 'BANCO INTER S.A.',
       '260': 'NU PAGAMENTOS - IP',
       '748': 'BANCO COOPERATIVO SICREDI S.A.',
-      '756': 'BANCO COOPERATIVO DO BRASIL S.A. (BANCOOB)'
+      '756': 'BANCO COOPERATIVO DO BRASIL S.A. (BANCOOB)',
+      '422': 'BANCO SAFRA S.A.',
+      '336': 'BANCO C6 S.A.',
+      '041': 'BANCO DO ESTADO DO RIO GRANDE DO SUL S.A. (BANRISUL)',
+      '070': 'BANCO DE BRASILIA S.A. (BRB)',
     };
     const bankName = bankMap[bankCode] || `Banco código ${bankCode}`;
 
@@ -52,9 +56,11 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
     // Fator de vencimento (pos 33 a 37 - 4 dígitos)
     let calculatedDueDate = '';
     const fator = parseInt(digits.substring(33, 37), 10);
-    if (fator > 1000) {
-      const baseDate = new Date(1997, 9, 7); // 07/10/1997
-      const targetDate = new Date(baseDate.getTime() + fator * 86400000);
+    if (fator >= 1000) {
+      const testCycle1 = new Date(new Date(1997, 9, 7).getTime() + fator * 86400000);
+      const targetDate = (testCycle1.getFullYear() < 2024)
+        ? new Date(new Date(2022, 4, 29).getTime() + fator * 86400000)
+        : testCycle1;
       const day = String(targetDate.getDate()).padStart(2, '0');
       const month = String(targetDate.getMonth() + 1).padStart(2, '0');
       const year = targetDate.getFullYear();
@@ -66,8 +72,8 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
     // Banco do Brasil: extrai Nosso Número do campo livre (posições 11 a 20 e 21 a 29)
     let bbNossoNumero = '';
     if (bankCode === '001') {
-      const p2 = digits.substring(11, 20); // 337338425
-      const p3 = digits.substring(21, 29); // 60492231
+      const p2 = digits.substring(11, 20);
+      const p3 = digits.substring(21, 29);
       bbNossoNumero = p2 + p3;
     }
 
@@ -97,6 +103,42 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
       amount: amountVal > 0 && amountVal < 1000000 ? amountVal : undefined,
       barcodeNumber: formatted,
     };
+  } else if (digits.length === 44) {
+    // Código de barras FEBRABAN de 44 dígitos
+    const bankCode = digits.substring(0, 3);
+    const bankMap: Record<string, string> = {
+      '001': 'BANCO DO BRASIL S.A.',
+      '237': 'BCO BRADESCO S.A.',
+      '341': 'ITAU UNIBANCO S.A.',
+      '033': 'BCO SANTANDER (BRASIL) S.A.',
+      '104': 'CAIXA ECONOMICA FEDERAL',
+      '077': 'BANCO INTER S.A.',
+      '260': 'NU PAGAMENTOS - IP',
+    };
+    const bankName = bankMap[bankCode] || 'Banco Emissor';
+
+    let calculatedDueDate = '';
+    const fator = parseInt(digits.substring(5, 9), 10);
+    if (fator >= 1000) {
+      const testCycle1 = new Date(new Date(1997, 9, 7).getTime() + fator * 86400000);
+      const targetDate = (testCycle1.getFullYear() < 2024)
+        ? new Date(new Date(2022, 4, 29).getTime() + fator * 86400000)
+        : testCycle1;
+      const day = String(targetDate.getDate()).padStart(2, '0');
+      const month = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const year = targetDate.getFullYear();
+      calculatedDueDate = `${day}/${month}/${year}`;
+    }
+
+    const valDigits = digits.substring(9, 19);
+    const amountVal = parseInt(valDigits, 10) / 100;
+
+    return {
+      beneficiaryBank: bankName,
+      amount: amountVal > 0 ? amountVal : undefined,
+      dueDate: calculatedDueDate || undefined,
+      barcodeNumber: digits,
+    };
   }
 
   return null;
@@ -107,11 +149,11 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
  * First leverages Gemini Flash Multimodal AI on the backend, with server-side and client-side fallback.
  */
 export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillData> {
-  // 1. Try Gemini Vision AI via /api/extract-bill first (supports both PDF and Images)
+  // 1. Try Gemini Vision AI & Server-side extraction via /api/extract-bill
   try {
     const { base64Data, mimeType } = await prepareImageForFastUpload(file);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25000);
+    const timeoutId = setTimeout(() => controller.abort(), 12000);
 
     const response = await fetch('/api/extract-bill', {
       method: 'POST',
@@ -124,20 +166,10 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
     if (response.ok) {
       const json = await response.json();
 
-      // Caso o servidor tenha extraído o texto bruto do PDF via fallback local no servidor
-      if (json.extractedServerText) {
-        console.log('[Bill Extraction] Processando texto extraído no servidor...');
-        const parsed = parseBillText(json.extractedServerText);
-        if (parsed.amount > 0 || parsed.barcodeNumber) {
-          return parsed;
-        }
-      }
-
-      if (json.success && json.data) {
+      if (json.data && (json.data.amount > 0 || json.data.barcodeNumber || json.data.beneficiaryName)) {
         const d = json.data;
-        console.log('[Bill Extraction] Gemini extraiu com sucesso:', d);
+        console.log('[Bill Extraction] Dados extraídos recebidos do servidor:', d);
 
-        // Se o valor ou linha digitável vierem, complementamos com parseLinhaDigitavel se necessário
         let barcodeNumber = d.barcodeNumber || '';
         let amount = typeof d.amount === 'number' ? d.amount : parseFloat(String(d.amount).replace(',', '.')) || 0;
         let dueDate = d.dueDate ? d.dueDate.replace(/\//g, '.') : '';
@@ -166,8 +198,16 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
           payerName: d.payerName || '',
           payerCpf: d.payerCpf || '',
           barcodeNumber: barcodeNumber,
-          rawText: `Gemini AI: ${d.beneficiaryName} - R$ ${amount}`,
+          rawText: `Extrator: ${d.beneficiaryName} - R$ ${amount}`,
         };
+      }
+
+      if (json.extractedServerText) {
+        console.log('[Bill Extraction] Processando texto extraído do PDF no servidor...');
+        const parsed = parseBillText(json.extractedServerText);
+        if (parsed.amount > 0 || parsed.barcodeNumber) {
+          return parsed;
+        }
       }
     }
   } catch (aiErr) {
@@ -225,10 +265,10 @@ export function parseBillText(text: string): ExtractedBillData {
 
   // 1. Linha Digitável / Barcode Detection
   let barcodeNumber = '';
-  const barcodePattern = /(\b0019\d[\d.\s]{40,55}\d\b)|(\b\d{5}\.?\d{5}\s+\d{5}\.?\d{6}\s+\d{5}\.?\d{6}\s+\d\s+\d{14}\b)|(\b\d{11,12}\s+\d{11,12}\s+\d{11,12}\s+\d{11,12}\b)|(\b\d{47,48}\b)/;
+  const barcodePattern = /(\b0019\d[\d.\s]{40,55}\d\b)|(\b\d{5}[.\s]?\d{5}\s+\d{5}[.\s]?\d{6}\s+\d{5}[.\s]?\d{6}\s+\d\s+\d{10,14}\b)|(\b\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\b)|(\b\d{47,48}\b)|(\b\d{44}\b)/;
   const barcodeMatch = clean.match(barcodePattern);
   if (barcodeMatch) {
-    barcodeNumber = (barcodeMatch[1] || barcodeMatch[2] || barcodeMatch[3] || barcodeMatch[4] || '').trim();
+    barcodeNumber = barcodeMatch[0].trim();
   }
 
   // Decode linha digitável if available to extract bank and amount
