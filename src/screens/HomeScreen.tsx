@@ -32,7 +32,8 @@ import {
   CornerUpLeft,
   Heart,
   Store,
-  UserPlus
+  UserPlus,
+  FileText
 } from 'lucide-react';
 import { AppCustomData, ScreenName, Transaction } from '../types';
 import { EditableText } from '../components/EditableText';
@@ -374,6 +375,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <Barcode className="w-7 h-7 text-neutral-900" />
             </div>
             <span className="text-xs font-bold text-neutral-800">Pagar</span>
+          </button>
+
+          {/* Subir fatura */}
+          <button
+            id="btn-action-upload-fatura"
+            onClick={() => onNavigate('PaymentOptions')}
+            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all relative">
+              <FileText className="w-7 h-7 text-[#820AD1]" />
+              <span className="absolute -top-1 -right-1 bg-[#820AD1] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
+                PDF
+              </span>
+            </div>
+            <span className="text-xs font-bold text-neutral-800">Subir fatura</span>
           </button>
 
           {/* Área Pix */}

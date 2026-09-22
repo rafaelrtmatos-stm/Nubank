@@ -43,10 +43,10 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
   const [isManualBarcodeOpen, setIsManualBarcodeOpen] = useState(false);
   const [manualBarcode, setManualBarcode] = useState('');
   const [barcodeError, setBarcodeError] = useState('');
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleProcessFile = async (file: File) => {
     if (!file) return;
 
     setIsProcessingPdf(true);
@@ -74,6 +74,13 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
     } finally {
       setIsProcessingPdf(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleProcessFile(file);
     }
   };
 
@@ -156,88 +163,87 @@ export const PaymentOptionsScreen: React.FC<PaymentOptionsScreenProps> = ({
           Estas são suas opções de pagamento
         </motion.h1>
 
-        {/* Card Destaque: Subir fatura / boleto PDF ou Foto */}
+        {/* Card Destaque Sanitizado: Subir fatura (PDF) */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.97 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.05 }}
-          onClick={() => fileInputRef.current?.click()}
-          className="mb-6 bg-gradient-to-r from-purple-900 via-[#820AD1] to-purple-800 text-white rounded-2xl p-5 shadow-md cursor-pointer active:scale-[0.98] transition-all border border-purple-500/20"
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+          }}
+          onDragLeave={() => setIsDragging(false)}
+          onDrop={(e) => {
+            e.preventDefault();
+            setIsDragging(false);
+            const file = e.dataTransfer.files?.[0];
+            if (file) handleProcessFile(file);
+          }}
+          className={`mb-6 rounded-2xl p-5 border transition-all ${
+            isDragging 
+              ? 'bg-purple-100/90 border-[#820AD1] ring-2 ring-[#820AD1]/30' 
+              : 'bg-purple-50/60 border-purple-200/70 hover:border-purple-300'
+          }`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3.5">
-              <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center text-white shrink-0 shadow-inner">
-                {isProcessingPdf ? (
-                  <Loader2 className="w-6 h-6 animate-spin text-white" />
-                ) : (
-                  <UploadCloud className="w-6 h-6 text-white" />
-                )}
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-[#820AD1] text-white flex items-center justify-center shrink-0 shadow-sm">
+              {isProcessingPdf ? (
+                <Loader2 className="w-6 h-6 animate-spin text-white" />
+              ) : (
+                <FileText className="w-6 h-6 text-white" />
+              )}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-extrabold text-[16px] text-neutral-900">
+                  Subir fatura
+                </span>
+                <span className="bg-[#820AD1] text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                  PDF
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-[15px] text-white">
-                    {isProcessingPdf ? 'Processando fatura...' : 'Subir fatura ou boleto'}
-                  </span>
-                  <span className="bg-amber-400 text-neutral-900 text-[10px] font-black px-1.5 py-0.5 rounded">
-                    IA NUBANK
-                  </span>
-                </div>
-                <p className="text-xs text-purple-100 mt-1 leading-snug">
-                  Suba sua conta de luz, água, internet ou boleto bancário (PDF ou foto) para gerar o comprovante oficial
-                </p>
-              </div>
+              <p className="text-xs text-neutral-600 mt-1 leading-relaxed">
+                Envie o arquivo PDF ou foto da conta de luz, água, internet ou boleto bancário para ler os dados e gerar o comprovante oficial.
+              </p>
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-white/20 flex items-center justify-between">
-            <span className="text-[11px] font-semibold text-purple-200">
-              Formatos: PDF, JPG, PNG
-            </span>
-            <button 
-              type="button" 
-              className="px-4 py-1.5 bg-white text-[#820AD1] text-xs font-bold rounded-xl shadow-sm hover:bg-neutral-100 transition-colors cursor-pointer"
-            >
-              {isProcessingPdf ? 'Carregando...' : 'Selecionar arquivo'}
-            </button>
-          </div>
+          {/* Botão Principal: Subir Fatura */}
+          <button
+            id="btn-upload-fatura"
+            type="button"
+            disabled={isProcessingPdf}
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-4 w-full py-3.5 px-4 bg-[#820AD1] hover:bg-[#7209b7] active:scale-[0.99] text-white font-bold text-sm rounded-xl flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer disabled:opacity-75"
+          >
+            {isProcessingPdf ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Lendo PDF da fatura...</span>
+              </>
+            ) : (
+              <>
+                <UploadCloud className="w-5 h-5" />
+                <span>Subir fatura (PDF)</span>
+              </>
+            )}
+          </button>
         </motion.div>
 
         <div className="divide-y divide-neutral-100">
-          {/* Pagar Boleto / Fatura via PDF ou Foto */}
-          <motion.button
-            id="btn-pay-boleto"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full py-5 flex items-center justify-between text-left group cursor-pointer hover:bg-neutral-50/80 -mx-3 px-3 rounded-2xl transition-colors"
-          >
-            <div className="flex items-center gap-4 flex-1">
-              <div className="w-11 h-11 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800">
-                <Barcode className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <span className="font-bold text-neutral-900 text-[15px]">Pagar boleto ou fatura</span>
-                <p className="text-xs text-neutral-500 mt-0.5">Suba o PDF ou foto da sua conta de energia, água ou boleto</p>
-              </div>
-            </div>
-            <ChevronRight className="w-5 h-5 text-neutral-300 group-hover:text-neutral-500 group-hover:translate-x-0.5 transition-all" />
-          </motion.button>
-
           {/* Digitar Linha Digitável */}
           <motion.button
             id="btn-pay-manual-barcode"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.11 }}
+            transition={{ delay: 0.08 }}
             onClick={() => {
               setBarcodeError('');
               setIsManualBarcodeOpen(true);
             }}
-            className="w-full py-5 flex items-center justify-between text-left group cursor-pointer hover:bg-neutral-50/80 -mx-3 px-3 rounded-2xl transition-colors"
+            className="w-full py-4.5 flex items-center justify-between text-left group cursor-pointer hover:bg-neutral-50/80 -mx-3 px-3 rounded-2xl transition-colors"
           >
             <div className="flex items-center gap-4 flex-1">
-              <div className="w-11 h-11 rounded-full bg-purple-50 flex items-center justify-center text-[#820AD1]">
+              <div className="w-11 h-11 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800">
                 <Keyboard className="w-6 h-6" />
               </div>
               <div className="flex-1">
