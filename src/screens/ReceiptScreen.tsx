@@ -10,7 +10,9 @@ import {
   Copy,
   Image as ImageIcon,
   Loader2,
-  X
+  X,
+  Pencil,
+  RotateCcw
 } from 'lucide-react';
 import { toPng, toBlob } from 'html-to-image';
 import { TransferData, AppCustomData } from '../types';
@@ -53,6 +55,12 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
     return `${day} ${month} ${year} - ${time}`;
   })();
 
+  // Editable date & time on receipt (defaults to transferData.receiptDateFormatted or current formattedDateTime)
+  const [receiptDateTime, setReceiptDateTime] = useState<string>(() => {
+    return transferData?.receiptDateFormatted || formattedDateTime;
+  });
+  const [isEditingDateTime, setIsEditingDateTime] = useState<boolean>(false);
+
   // Formatted Amount
   const formattedAmount = amount.toLocaleString('pt-BR', {
     style: 'currency',
@@ -89,6 +97,10 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
   const generateReceiptImage = async (): Promise<string | null> => {
     if (!receiptCardRef.current) return null;
     try {
+      if (isEditingDateTime) {
+        setIsEditingDateTime(false);
+        await new Promise((r) => setTimeout(r, 60));
+      }
       setIsGenerating(true);
       const dataUrl = await toPng(receiptCardRef.current, {
         cacheBust: true,
@@ -174,10 +186,10 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
   const handleCopyText = () => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(
-        `COMPROVANTE DE TRANSFERÊNCIA PIX - NUBANK\n` +
-        `Data: ${formattedDateTime}\n` +
+        `COMPROVANTE DE ${isBillPayment ? 'PAGAMENTO DE BOLETO' : 'TRANSFERÊNCIA PIX'} - NUBANK\n` +
+        `Data: ${receiptDateTime}\n` +
         `Valor: ${formattedAmount}\n` +
-        `Tipo: Pix\n` +
+        `Tipo: ${isBillPayment ? 'Boleto' : 'Pix'}\n` +
         `ID da transação: ${transactionId}\n\n` +
         `DESTINO:\n` +
         `Nome: ${destName}\n` +
@@ -248,9 +260,54 @@ export const ReceiptScreen: React.FC<ReceiptScreenProps> = ({
             <h1 className="text-[21px] sm:text-[23px] font-bold text-neutral-900 tracking-tight leading-tight">
               {isBillPayment ? 'Comprovante de pagamento' : 'Comprovante de transferência'}
             </h1>
-            <p className="text-[13px] text-neutral-500 font-medium mt-1 mb-8">
-              {transferData?.receiptDateFormatted || formattedDateTime}
-            </p>
+            <div className="mt-1 mb-8">
+              {isEditingDateTime ? (
+                <div className="flex items-center gap-2 mt-1.5">
+                  <input
+                    type="text"
+                    value={receiptDateTime}
+                    onChange={(e) => setReceiptDateTime(e.target.value)}
+                    className="text-[13px] font-medium text-neutral-900 bg-neutral-50 px-2.5 py-1.5 rounded-lg border border-[#820AD1] outline-hidden w-full max-w-[280px]"
+                    placeholder="DD MMM AAAA - HH:MM:SS"
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingDateTime(false)}
+                    className="px-3 py-1.5 bg-[#820AD1] hover:bg-[#6f09b5] text-white text-xs font-bold rounded-lg cursor-pointer transition-colors shrink-0"
+                  >
+                    Salvar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const now = new Date();
+                      const day = String(now.getDate()).padStart(2, '0');
+                      const months = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ'];
+                      const month = months[now.getMonth()];
+                      const year = now.getFullYear();
+                      const time = now.toTimeString().split(' ')[0];
+                      setReceiptDateTime(`${day} ${month} ${year} - ${time}`);
+                    }}
+                    title="Definir para o horário atual"
+                    className="p-1.5 text-neutral-400 hover:text-neutral-700 cursor-pointer rounded-lg hover:bg-neutral-100 shrink-0"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div 
+                  onClick={() => setIsEditingDateTime(true)}
+                  className="inline-flex items-center gap-1.5 cursor-pointer group rounded-lg hover:bg-neutral-50 px-1 py-0.5 -ml-1 transition-colors"
+                  title="Toque para editar a data e hora do comprovante"
+                >
+                  <p className="text-[13px] text-neutral-500 font-medium">
+                    {receiptDateTime}
+                  </p>
+                  <Pencil className="w-3 h-3 text-neutral-400 opacity-60 group-hover:opacity-100 group-hover:text-[#820AD1] transition-all" />
+                </div>
+              )}
+            </div>
 
             {/* Summary Section */}
             {isBillPayment ? (

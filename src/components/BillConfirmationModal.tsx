@@ -11,7 +11,9 @@ import {
   User, 
   CheckCircle2, 
   ArrowRight,
-  Sparkles
+  Sparkles,
+  Clock,
+  RotateCcw
 } from 'lucide-react';
 import { ExtractedBillData } from '../utils/pdfReceiptParser';
 import { TransferData } from '../types';
@@ -37,6 +39,7 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
     extractedData?.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '0,00'
   );
   const [dueDate, setDueDate] = useState<string>(() => extractedData?.dueDate || new Date().toLocaleDateString('pt-BR'));
+  const [receiptDateTime, setReceiptDateTime] = useState<string>(() => formatNubankReceiptDate(new Date()));
   const [barcodeNumber, setBarcodeNumber] = useState<string>(
     () => extractedData?.barcodeNumber || ''
   );
@@ -66,6 +69,7 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
         extractedData.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '0,00'
       );
       setDueDate(extractedData.dueDate || new Date().toLocaleDateString('pt-BR'));
+      setReceiptDateTime(formatNubankReceiptDate(new Date()));
       setBarcodeNumber(extractedData.barcodeNumber || '');
       setNossoNumero(extractedData.nossoNumero || '');
       setBeneficiaryName(extractedData.beneficiaryName || 'Beneficiário do Boleto');
@@ -81,7 +85,7 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
   const handleConfirm = () => {
     const parsedAmount = parseFloat(amount.replace(/\./g, '').replace(',', '.')) || 0;
     const now = new Date();
-    const currentFormattedDate = formatNubankReceiptDate(now);
+    const currentFormattedDate = receiptDateTime.trim() || formatNubankReceiptDate(now);
     const newTransactionId = generateNubankTransactionId();
 
     const transferData: TransferData = {
@@ -235,6 +239,35 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
                 placeholder="DD.MM.AAAA"
                 className="w-full px-3.5 py-2.5 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl font-medium text-neutral-900 outline-hidden transition-colors"
               />
+            </div>
+
+            {/* Data e Hora do Pagamento / Comprovante */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-[#820AD1]" />
+                  Data e Hora do Comprovante
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setReceiptDateTime(formatNubankReceiptDate(new Date()))}
+                  className="text-[11px] font-semibold text-[#820AD1] hover:underline cursor-pointer flex items-center gap-1"
+                  title="Atualizar para o horário atual"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Agora
+                </button>
+              </div>
+              <input
+                type="text"
+                value={receiptDateTime}
+                onChange={(e) => setReceiptDateTime(e.target.value)}
+                placeholder="Ex: 23 SET 2026 - 15:30:00"
+                className="w-full px-3.5 py-2.5 bg-neutral-50 focus:bg-white border border-neutral-200 focus:border-[#820AD1] rounded-xl font-medium text-neutral-900 outline-hidden transition-colors text-xs"
+              />
+              <span className="text-[10px] text-neutral-400 mt-1 block">
+                Automático no padrão oficial (ex: 23 SET 2026 - 14:20:00), editável se desejar.
+              </span>
             </div>
 
             {/* Código do Boleto (Linha Digitável / Código de barras) */}
