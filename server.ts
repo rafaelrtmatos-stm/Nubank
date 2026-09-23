@@ -13,17 +13,34 @@ const __dirname = path.dirname(__filename);
 function parseServerBillText(text: string) {
   const clean = text.replace(/\s+/g, " ");
 
-  // 1. Linha digitável ou código de barras
+  // 1. Linha digitável ou código de barras com detecção robusta
   let barcodeNumber = "";
-  const mBancario = clean.match(/\b\d{5}[.\s]?\d{5}\s+\d{5}[.\s]?\d{6}\s+\d{5}[.\s]?\d{6}\s+\d\s+\d{10,14}\b/);
-  const mConces = clean.match(/\b\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\b/);
-  const mContinuous = clean.match(/\b\d{47,48}\b/);
-  const mBar44 = clean.match(/\b\d{44}\b/);
+  const patterns = [
+    /\b\d{5}[.\s-]?\d{5}\s+\d{5}[.\s-]?\d{6}\s+\d{5}[.\s-]?\d{6}\s+\d\s+\d{10,14}\b/,
+    /\b\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\b/,
+    /\b\d{47,48}\b/,
+    /\b\d{44}\b/
+  ];
 
-  if (mBancario) barcodeNumber = mBancario[0].trim();
-  else if (mConces) barcodeNumber = mConces[0].trim();
-  else if (mContinuous) barcodeNumber = mContinuous[0].trim();
-  else if (mBar44) barcodeNumber = mBar44[0].trim();
+  for (const p of patterns) {
+    const m = clean.match(p);
+    if (m) {
+      barcodeNumber = m[0].trim();
+      break;
+    }
+  }
+
+  // Fallback para escanear blocos numéricos agrupados
+  if (!barcodeNumber) {
+    const candidateChunks = clean.match(/[\d.\-\s]{35,70}/g) || [];
+    for (const chunk of candidateChunks) {
+      const d = chunk.replace(/\D/g, "");
+      if (d.length === 47 || d.length === 48 || d.length === 44) {
+        barcodeNumber = chunk.trim();
+        break;
+      }
+    }
+  }
 
   let amount = 0;
   let dueDate = "";
@@ -50,10 +67,12 @@ function parseServerBillText(text: string) {
     };
     beneficiaryBank = bankMap[bankCode] || `Banco código ${bankCode}`;
 
+    // Valor da linha digitável: posições 37 a 47 (últimos 10 dígitos)
     const valDigits = digits.substring(37, 47);
     const parsedVal = parseInt(valDigits, 10) / 100;
     if (parsedVal > 0) amount = parsedVal;
 
+    // Fator de vencimento FEBRABAN: posições 33 a 37
     const fator = parseInt(digits.substring(33, 37), 10);
     if (fator >= 1000) {
       const testCycle1 = new Date(new Date(1997, 9, 7).getTime() + fator * 86400000);
@@ -109,10 +128,10 @@ function parseServerBillText(text: string) {
     if (parsedVal > 0) amount = parsedVal;
   }
 
-  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR DOCUMENTO|\(=?\) ?VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO)[\s:(=)]*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO)\D{0,25}R\$\s*([\d.]+,\d{2})/i);
+  // Extração de valor a partir do texto do boleto/fatura caso não venha no código ou para confirmação
+  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL|VALOR DO DOCUMENTO|VALOR DOCUMENTO|\(=?\)\s*VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO|VALOR A SER PAGO|VALOR DA FATURA|TOTAL DA FATURA|VALOR TOTAL A PAGAR)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO|VALOR TOTAL|VALOR A PAGAR)\D{0,35}R\$\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i);
   if (amountMatch && amountMatch[1]) {
     const parsed = parseFloat(amountMatch[1].replace(/\./g, "").replace(",", "."));
     if (!isNaN(parsed) && parsed > 0) amount = parsed;
@@ -128,7 +147,7 @@ function parseServerBillText(text: string) {
   }
 
   if (!dueDate) {
-    const dueMatch = clean.match(/(?:VENCIMENTO|Data de Vencimento|Vencimento|Pagar at[eé]|DATA DO VENCIMENTO)[\s:A-ZÁ-Ú/.-]{0,70}?(\d{2}[./]\d{2}[./]\d{4})/i) ||
+    const dueMatch = clean.match(/(?:VENCIMENTO|Data de Vencimento|Vencimento|Pagar at[eé]|DATA DO VENCIMENTO|Vence em|DATA LIMITE)[\s:A-ZÁ-Ú/.-]{0,70}?(\d{2}[./]\d{2}[./]\d{4})/i) ||
                      clean.match(/(?:PAG[ÁA]VEL\s+PREFERENCIALMENTE[^\n\r]*?)\s*(\d{2}[./]\d{2}[./]\d{4})/i) ||
                      clean.match(/(\d{2}\/\d{2}\/202[5-9])/);
     if (dueMatch && dueMatch[1]) {
@@ -190,7 +209,7 @@ function parseServerBillText(text: string) {
   }
 
   let unitOrContract = "";
-  const unitMatch = clean.match(/(?:N[úu]mero da UC|UNIDADE CONSUMIDORA|CONTA CONTRATO|INSTALA[ÇC][ÃA]O)[\s:A-Z/.-]{0,40}?(\d{1,3}\.[\d.\-]+|\d{7,15})/i);
+  const unitMatch = clean.match(/(?:N[úu]mero da UC|UNIDADE CONSUMIDORA|CONTA CONTRATO|INSTALA[ÇC][ÃA]O|C[ÓO]DIGO DO CLIENTE)[\s:A-Z/.-]{0,40}?(\d{1,3}\.[\d.\-]+|\d{7,15})/i);
   if (unitMatch) {
     unitOrContract = (unitMatch[1] || unitMatch[0]).trim();
   }
@@ -373,6 +392,9 @@ REGRAS CRÍTICAS:
 
   // Bill & Boleto extraction endpoint powered by hybrid Server-Side PDF parsing and Gemini Multimodal AI
   app.post("/api/extract-bill", async (req, res) => {
+    let serverExtractedText = "";
+    let serverParsedData: any = null;
+
     try {
       const { base64Data, mimeType } = req.body;
       if (!base64Data) {
@@ -381,9 +403,6 @@ REGRAS CRÍTICAS:
 
       const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
       const isPdf = (mimeType && mimeType.includes("pdf")) || cleanBase64.startsWith("JVBERi");
-
-      let serverExtractedText = "";
-      let serverParsedData: any = null;
 
       // 1. If it is a PDF, immediately extract uncompressed text using server-side pdfjs in milliseconds
       if (isPdf) {
@@ -416,20 +435,16 @@ REGRAS CRÍTICAS:
       // Check for GEMINI_API_KEY
       const apiKey = process.env.GEMINI_API_KEY;
 
-      // If we already extracted valid amount and barcode from server PDF text, and no API key or rapid mode
-      if (serverParsedData && (serverParsedData.amount > 0 || serverParsedData.barcodeNumber)) {
-        if (!apiKey) {
-          return res.json({
-            success: true,
-            data: serverParsedData,
-            extractedServerText: serverExtractedText,
-          });
-        }
-      }
+      // If we already extracted valid amount and barcode from server PDF text directly
+      const hasDirectServerMatch = serverParsedData && (serverParsedData.amount > 0 || serverParsedData.barcodeNumber);
 
       if (!apiKey) {
         if (serverParsedData) {
-          return res.json({ success: true, data: serverParsedData });
+          return res.json({ 
+            success: true, 
+            data: serverParsedData,
+            extractedServerText: serverExtractedText 
+          });
         }
         return res.status(200).json({ 
           success: false, 
@@ -461,12 +476,11 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
 9. "payerCpf": CPF ou CNPJ do pagador/titular se presente (ex: "025.803.262-60").
 10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.105.447.013-05").`;
 
-      // Models to try
+      // Supported and resilient models (gemini-3.1-flash-lite is fastest and avoids 503 spikes)
       const candidateModels = [
-        "gemini-3.8-flash",
         "gemini-3.1-flash-lite",
         "gemini-flash-latest",
-        "gemini-2.5-flash",
+        "gemini-3.8-flash",
       ];
 
       let resultData: any = null;
@@ -491,9 +505,9 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
         try {
           console.log(`[Bill Extraction] Tentando modelo ${modelName}...`);
           
-          // Use a fast timeout promise to avoid keeping the user waiting
+          // Realistic timeout promise to allow full vision inference without blocking indefinitely
           const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Timeout IA 6s")), 6000)
+            setTimeout(() => reject(new Error("Timeout IA 18s")), 18000)
           );
 
           const aiCallPromise = ai.models.generateContent({
@@ -568,7 +582,14 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
         message: "IA temporariamente ocupada, acionando extrator local.",
       });
     } catch (err: any) {
-      console.log("[Bill Extraction] Exceção geral capturada, retornando fallback:", err);
+      console.log("[Bill Extraction] Exceção geral capturada:", err);
+      if (serverParsedData) {
+        return res.json({
+          success: true,
+          data: serverParsedData,
+          extractedServerText: serverExtractedText,
+        });
+      }
       return res.status(200).json({
         success: false,
         fallback: true,

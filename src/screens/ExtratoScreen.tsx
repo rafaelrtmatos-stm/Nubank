@@ -456,7 +456,9 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
 
                 <div className="flex justify-between items-center">
                   <span className="text-neutral-500">Tipo de transação</span>
-                  <span className="font-semibold text-neutral-800">Pix</span>
+                  <span className="font-semibold text-neutral-800">
+                    {selectedTransaction.type === 'bill_payment' || selectedTransaction.title.toLowerCase().includes('boleto') ? 'Pagamento de boleto' : 'Pix'}
+                  </span>
                 </div>
 
                 <div className="flex justify-between items-center pt-2 border-t border-neutral-200">
@@ -472,15 +474,15 @@ export const ExtratoScreen: React.FC<ExtratoScreenProps> = ({
                 <button
                   onClick={() => {
                     if (onViewReceipt) {
-                      const isBill = selectedTransaction.category?.toLowerCase().includes('boleto') || selectedTransaction.title.toLowerCase().includes('boleto');
+                      const isBill = selectedTransaction.type === 'bill_payment' || selectedTransaction.category?.toLowerCase().includes('boleto') || selectedTransaction.title.toLowerCase().includes('boleto');
                       onViewReceipt({
-                        recipient: {
+                        recipient: selectedTransaction.recipient || {
                           id: selectedTransaction.id,
-                          name: selectedTransaction.subtitle.replace(/\s*-\s*Pix.*$/i, '').trim() || 'Destinatário',
-                          initials: selectedTransaction.subtitle.substring(0, 2).toUpperCase() || 'PI',
+                          name: selectedTransaction.subtitle.replace(/\s*-\s*(Pix|Boleto).*$/i, '').trim() || (isBill ? 'Beneficiário do Boleto' : 'Destinatário'),
+                          initials: selectedTransaction.subtitle.substring(0, 2).toUpperCase() || (isBill ? 'BO' : 'PI'),
                           document: '***.803.262-**',
-                          institution: 'NU PAGAMENTOS - IP',
-                          accountType: 'Conta de pagamentos',
+                          institution: isBill ? 'BANCO DO BRASIL S.A.' : 'NU PAGAMENTOS - IP',
+                          accountType: 'Conta corrente',
                           agency: '0001',
                           account: '00000000-0',
                         },

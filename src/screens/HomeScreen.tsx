@@ -532,6 +532,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <div className="space-y-3">
           {appData.transactions.map((tx, idx) => {
             const isNegative = tx.amount < 0;
+            const isBill = tx.type === 'bill_payment' || tx.title?.toLowerCase().includes('boleto') || tx.subtitle?.toLowerCase().includes('boleto');
             return (
               <div
                 key={tx.id || idx}
@@ -541,9 +542,9 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    isNegative ? 'bg-neutral-100 text-neutral-600' : 'bg-emerald-50 text-emerald-600'
+                    isBill ? 'bg-purple-50 text-[#820AD1]' : isNegative ? 'bg-neutral-100 text-neutral-600' : 'bg-emerald-50 text-emerald-600'
                   }`}>
-                    {isNegative ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                    {isBill ? <Barcode className="w-5 h-5" /> : isNegative ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-neutral-900 truncate">{tx.title}</p>

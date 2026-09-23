@@ -290,27 +290,66 @@ export default function App() {
     // Deduct exact amount from balance
     setAppData((prev) => {
       const updatedBalance = Number(Math.max(0, prev.balance - data.amount).toFixed(2));
+      const isBill = !!data.isBillPayment;
       
       const newTx: Transaction = {
         id: 'tx-' + Date.now(),
-        type: 'pix_send',
-        title: 'Transferência enviada',
-        subtitle: `${data.recipient.name} - Pix`,
+        type: isBill ? 'bill_payment' : 'pix_send',
+        title: isBill ? 'Pagamento de boleto' : 'Transferência enviada',
+        subtitle: `${data.recipient.name} - ${isBill ? 'Boleto' : 'Pix'}`,
         amount: -data.amount,
         date: 'Hoje, ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
         recipient: data.recipient
       };
 
-      return {
+      const updated = {
         ...prev,
         balance: updatedBalance,
         transactions: [newTx, ...prev.transactions]
       };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
     });
 
     // Show receipt
     navigateTo('Receipt');
-    showToast(`Pix de ${data.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} enviado com sucesso!`);
+    showToast(
+      data.isBillPayment
+        ? `Boleto de ${data.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} pago com sucesso!`
+        : `Pix de ${data.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} enviado com sucesso!`
+    );
+  };
+
+  const handleProcessBillPayment = (transferData: TransferData) => {
+    // Deduct exact amount from balance and record in transactions history
+    setAppData((prev) => {
+      const updatedBalance = Number(Math.max(0, prev.balance - transferData.amount).toFixed(2));
+      const newTx: Transaction = {
+        id: 'tx-bill-' + Date.now(),
+        type: 'bill_payment',
+        title: 'Pagamento de boleto',
+        subtitle: `${transferData.recipient.name} - Boleto`,
+        amount: -transferData.amount,
+        date: 'Hoje, ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        recipient: transferData.recipient,
+      };
+
+      const updated = {
+        ...prev,
+        balance: updatedBalance,
+        transactions: [newTx, ...prev.transactions],
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    setActiveTransfer(transferData);
+    navigateTo('Receipt');
+    showToast(`Boleto de ${transferData.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} pago com sucesso!`);
   };
 
   return (
@@ -390,10 +429,7 @@ export default function App() {
               <PaymentOptionsScreen
                 onGoBack={goBack}
                 onNavigate={(screen) => navigateTo(screen)}
-                onGenerateReceiptFromPdf={(transferData) => {
-                  setActiveTransfer(transferData);
-                  navigateTo('Receipt');
-                }}
+                onGenerateReceiptFromPdf={handleProcessBillPayment}
               />
             </motion.div>
           )}

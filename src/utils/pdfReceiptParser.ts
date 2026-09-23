@@ -153,7 +153,7 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
   try {
     const { base64Data, mimeType } = await prepareImageForFastUpload(file);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 12000);
+    const timeoutId = setTimeout(() => controller.abort(), 24000);
 
     const response = await fetch('/api/extract-bill', {
       method: 'POST',
@@ -263,12 +263,34 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
 export function parseBillText(text: string): ExtractedBillData {
   const clean = text.replace(/\s+/g, ' ');
 
-  // 1. Linha Digitável / Barcode Detection
+  // 1. Linha Digitável / Barcode Detection com múltiplos padrões e escaneamento de blocos
   let barcodeNumber = '';
-  const barcodePattern = /(\b0019\d[\d.\s]{40,55}\d\b)|(\b\d{5}[.\s]?\d{5}\s+\d{5}[.\s]?\d{6}\s+\d{5}[.\s]?\d{6}\s+\d\s+\d{10,14}\b)|(\b\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\b)|(\b\d{47,48}\b)|(\b\d{44}\b)/;
-  const barcodeMatch = clean.match(barcodePattern);
-  if (barcodeMatch) {
-    barcodeNumber = barcodeMatch[0].trim();
+  const barcodePatterns = [
+    /\b\d{5}[.\s-]?\d{5}\s+\d{5}[.\s-]?\d{6}\s+\d{5}[.\s-]?\d{6}\s+\d\s+\d{10,14}\b/,
+    /\b\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\s+\d{11,12}[-\s]?\d{0,1}\b/,
+    /\b0019\d[\d.\s]{40,55}\d\b/,
+    /\b\d{47,48}\b/,
+    /\b\d{44}\b/
+  ];
+
+  for (const pat of barcodePatterns) {
+    const match = clean.match(pat);
+    if (match) {
+      barcodeNumber = match[0].trim();
+      break;
+    }
+  }
+
+  // Fallback: varredura por sequência de dígitos típica de boleto
+  if (!barcodeNumber) {
+    const chunks = clean.match(/[\d.\-\s]{35,70}/g) || [];
+    for (const chunk of chunks) {
+      const d = chunk.replace(/\D/g, '');
+      if (d.length === 47 || d.length === 48 || d.length === 44) {
+        barcodeNumber = chunk.trim();
+        break;
+      }
+    }
   }
 
   // Decode linha digitável if available to extract bank and amount
@@ -296,6 +318,8 @@ export function parseBillText(text: string): ExtractedBillData {
     beneficiaryName = 'CPFL ENERGIA S.A.';
   } else if (/COPEL/i.test(clean)) {
     beneficiaryName = 'COPEL DISTRIBUIÇÃO S.A.';
+  } else if (/CEMIG/i.test(clean)) {
+    beneficiaryName = 'CEMIG DISTRIBUIÇÃO S.A.';
   } else if (/CLARO/i.test(clean)) {
     beneficiaryName = 'CLARO S.A.';
   } else if (/VIVO|TELEFONICA/i.test(clean)) {
@@ -319,10 +343,9 @@ export function parseBillText(text: string): ExtractedBillData {
   let amount = decodedFromBarcode?.amount || 0;
 
   // Prioritize "Total a Pagar R$ 534,45" or "(=) VALOR DOCUMENTO 534,45" or "VALOR COBRADO"
-  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR)\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR DOCUMENTO|\(=?\) ?VALOR DOCUMENTO|VALOR COBRADO)[\s:(=)]*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO)\D{0,20}R\$\s*([\d.]+,\d{2})/i);
+  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL|VALOR DO DOCUMENTO|VALOR DOCUMENTO|\(=?\)\s*VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO|VALOR A SER PAGO|VALOR DA FATURA|TOTAL DA FATURA|VALOR TOTAL A PAGAR)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO|VALOR TOTAL|VALOR A PAGAR)\D{0,35}R\$\s*([\d.]+,\d{2})/i) ||
+                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i);
 
   if (amountMatch && amountMatch[1]) {
     const numStr = amountMatch[1].replace(/\./g, '').replace(',', '.');
@@ -344,7 +367,7 @@ export function parseBillText(text: string): ExtractedBillData {
   let dueDate = decodedFromBarcode?.dueDate || '';
 
   // Look for date specifically linked to Vencimento: e.g. "Vencimento 17/08/2026" or table cell after VENCIMENTO
-  const dueMatch = clean.match(/(?:VENCIMENTO|Vencimento|Data de Vencimento)[\s:A-ZÁ-Ú/.-]{0,70}?(\d{2}[./]\d{2}[./]\d{4})/i) ||
+  const dueMatch = clean.match(/(?:VENCIMENTO|Vencimento|Data de Vencimento|Pagar at[eé]|DATA DO VENCIMENTO|Vence em|DATA LIMITE)[\s:A-ZÁ-Ú/.-]{0,70}?(\d{2}[./]\d{2}[./]\d{4})/i) ||
                    clean.match(/(?:PAG[ÁA]VEL\s+PREFERENCIALMENTE[^\n\r]*?)\s*(\d{2}[./]\d{2}[./]\d{4})/i) ||
                    clean.match(/(\d{2}\/\d{2}\/202[4-9])/);
 
