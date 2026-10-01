@@ -45,6 +45,8 @@ interface EditMenuModalProps {
   data: AppCustomData;
   onSave: (newData: AppCustomData) => void;
   onReset: () => void;
+  onLockApp?: () => void;
+  onResetPin?: () => void;
   isInlineEditMode: boolean;
   onToggleInlineEditMode: (enabled: boolean) => void;
   onTriggerSimulatedPix?: (
@@ -62,6 +64,8 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
   data,
   onSave,
   onReset,
+  onLockApp,
+  onResetPin,
   isInlineEditMode,
   onToggleInlineEditMode,
   onTriggerSimulatedPix,
@@ -1287,13 +1291,87 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
             </div>
           )}
 
-          {/* TAB: LOGIN */}
+          {/* TAB: LOGIN & SEGURANÇA */}
           {activeTab === 'login' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
+              {/* PIN Configuration Box */}
+              <div className="bg-purple-50/80 border border-purple-200/80 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-[#820AD1] text-white flex items-center justify-center shadow-xs">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-neutral-900">Senha de Acesso de 4 Dígitos</h4>
+                      <p className="text-[11px] text-neutral-500">Teclado numérico estilo smartphone na tela cheia</p>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    formData.accessPin && formData.accessPin.length === 4
+                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-300'
+                      : 'bg-amber-100 text-amber-700 border border-amber-300'
+                  }`}>
+                    {formData.accessPin && formData.accessPin.length === 4 ? 'Senha Ativa' : 'Sem Senha'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="text-xs font-semibold text-neutral-700 block mb-1">
+                      Código PIN Atual (4 dígitos)
+                    </label>
+                    <input
+                      type="text"
+                      maxLength={4}
+                      value={formData.accessPin || ''}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                        handleChange('accessPin', val);
+                      }}
+                      placeholder="Ex: 1234"
+                      className="w-full bg-white border border-purple-200 rounded-xl px-3 py-2 text-sm font-mono font-bold tracking-widest text-neutral-900 text-center focus:outline-none focus:border-[#820AD1]"
+                    />
+                  </div>
+
+                  <div className="flex flex-col justify-end gap-1.5">
+                    <button
+                      type="button"
+                      id="btn-editmenu-test-lock"
+                      onClick={() => {
+                        onClose();
+                        if (onLockApp) {
+                          onLockApp();
+                        }
+                      }}
+                      className="w-full py-2 px-3 bg-[#820AD1] hover:bg-[#6e09b3] active:scale-95 text-white text-xs font-bold rounded-xl transition-all cursor-pointer shadow-xs flex items-center justify-center gap-1.5"
+                    >
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Testar Tela de Senha (Splash → Teclado)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      id="btn-editmenu-reset-first-access"
+                      onClick={() => {
+                        handleChange('accessPin', '');
+                        onClose();
+                        if (onResetPin) {
+                          onResetPin();
+                        }
+                      }}
+                      className="w-full py-1.5 px-3 bg-white hover:bg-red-50 active:scale-95 text-red-600 border border-red-200 text-[11px] font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      <span>Redefinir e Simular Primeiro Acesso</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               <div>
-                <label className="font-semibold text-neutral-700 block mb-1">Título da Tela de Login</label>
+                <label className="font-semibold text-neutral-700 block mb-1">Título da Tela de Bloqueio</label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={formData.loginTitle}
                   onChange={(e) => handleChange('loginTitle', e.target.value)}
                   className="w-full bg-white border border-neutral-300 rounded-xl p-2.5 font-medium focus:outline-none focus:border-[#820AD1]"
@@ -1301,22 +1379,13 @@ export const EditMenuModal: React.FC<EditMenuModalProps> = ({
               </div>
 
               <div>
-                <label className="font-semibold text-neutral-700 block mb-1">Texto do Botão de Entrada</label>
+                <label className="font-semibold text-neutral-700 block mb-1">Nome ou Subtítulo na Tela de Senha</label>
                 <input
                   type="text"
-                  value={formData.loginButtonText}
-                  onChange={(e) => handleChange('loginButtonText', e.target.value)}
+                  value={formData.companyName}
+                  onChange={(e) => handleChange('companyName', e.target.value)}
+                  placeholder="Nu Empresas"
                   className="w-full bg-white border border-neutral-300 rounded-xl px-3 py-2 font-bold focus:outline-none focus:border-[#820AD1]"
-                />
-              </div>
-
-              <div>
-                <label className="font-semibold text-neutral-700 block mb-1">Texto Explicativo de Ajuda</label>
-                <textarea
-                  rows={2}
-                  value={formData.loginHelperText}
-                  onChange={(e) => handleChange('loginHelperText', e.target.value)}
-                  className="w-full bg-white border border-neutral-300 rounded-xl p-2.5 focus:outline-none focus:border-[#820AD1]"
                 />
               </div>
             </div>

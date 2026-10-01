@@ -129,20 +129,23 @@ function parseServerBillText(text: string) {
   }
 
   // Extração de valor a partir do texto do boleto/fatura caso não venha no código ou para confirmação
-  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL|VALOR DO DOCUMENTO|VALOR DOCUMENTO|\(=?\)\s*VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO|VALOR A SER PAGO|VALOR DA FATURA|TOTAL DA FATURA|VALOR TOTAL A PAGAR)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO|VALOR TOTAL|VALOR A PAGAR)\D{0,35}R\$\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i);
-  if (amountMatch && amountMatch[1]) {
-    const parsed = parseFloat(amountMatch[1].replace(/\./g, "").replace(",", "."));
-    if (!isNaN(parsed) && parsed > 0) amount = parsed;
-  }
+  const amountPatterns = [
+    /(?:TOTAL\s*A\s*PAGAR|VALOR\s*A\s*PAGAR|TOTAL\s*DA\s*FATURA|VALOR\s*DA\s*FATURA|VALOR\s*DA\s*NOTA(?:\s*FISCAL)?|VALOR\s*DO\s*DOCUMENTO|\(=?\)\s*VALOR\s*DOCUMENTO|VALOR\s*COBRADO|VALOR\s*L[IÍ]QUIDO|VALOR\s*TOTAL(?:\s*DA\s*NOTA)?|VALOR\s*A\s*SER\s*PAGO|TOTAL\s*A\s*RECOLHER|TOTAL\s*GERAL|VALOR\s*FINAL|VALOR\s*PRINCIPAL|TOTAL\s*CONSOLIDADO|TOTAL\s*A\s*DEBITAR)[^\d\n\r]{0,35}?([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2})/i,
+    /(?:TOTAL|VALOR)[^\d\n\r]{0,25}?(?:R\$|\(R\$\))[^\d\n\r]{0,10}?([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2})/i,
+    /(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL|VALOR DO DOCUMENTO|VALOR DOCUMENTO|\(=?\)\s*VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO|VALOR A SER PAGO|VALOR DA FATURA|TOTAL DA FATURA|VALOR TOTAL A PAGAR)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i,
+    /(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO|VALOR TOTAL|VALOR A PAGAR)\D{0,35}R\$\s*([\d.]+,\d{2})/i,
+    /(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i,
+    /R\$\s*([\d.]+,\d{2})/
+  ];
 
-  if (amount === 0) {
-    const generalR$ = clean.match(/R\$\s*([\d.]+,\d{2})/g);
-    if (generalR$ && generalR$.length > 0) {
-      const last = generalR$[generalR$.length - 1].replace(/R\$\s*/, "").replace(/\./g, "").replace(",", ".");
-      const parsed = parseFloat(last);
-      if (!isNaN(parsed) && parsed > 0) amount = parsed;
+  for (const pat of amountPatterns) {
+    const m = clean.match(pat);
+    if (m && m[1]) {
+      const parsed = parseFloat(m[1].replace(/\./g, "").replace(",", "."));
+      if (!isNaN(parsed) && parsed > 0 && parsed < 10000000) {
+        amount = parsed;
+        break;
+      }
     }
   }
 
@@ -396,16 +399,17 @@ REGRAS CRÍTICAS:
     let serverParsedData: any = null;
 
     try {
-      const { base64Data, mimeType } = req.body;
-      if (!base64Data) {
+      const { base64Data, mimeType, imageBase64, extractedClientText } = req.body;
+      if (!base64Data && !imageBase64 && !extractedClientText) {
         return res.status(400).json({ error: "Dados da fatura ou boleto não fornecidos." });
       }
 
-      const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, "");
+      const cleanBase64 = (base64Data || "").replace(/^data:[^;]+;base64,/, "");
+      const cleanImageBase64 = (imageBase64 || "").replace(/^data:[^;]+;base64,/, "");
       const isPdf = (mimeType && mimeType.includes("pdf")) || cleanBase64.startsWith("JVBERi");
 
       // 1. If it is a PDF, immediately extract uncompressed text using server-side pdfjs in milliseconds
-      if (isPdf) {
+      if (isPdf && cleanBase64) {
         try {
           const buffer = Buffer.from(cleanBase64, "base64");
           // @ts-ignore
@@ -413,6 +417,7 @@ REGRAS CRÍTICAS:
           const doc = await pdfjsLib.getDocument({
             data: new Uint8Array(buffer),
             useSystemFonts: true,
+            disableFontFace: true,
           }).promise;
 
           for (let p = 1; p <= doc.numPages; p++) {
@@ -423,27 +428,26 @@ REGRAS CRÍTICAS:
 
           serverExtractedText = serverExtractedText.trim();
           console.log(`[Bill Extraction] Texto extraído do PDF no servidor (${serverExtractedText.length} caracteres).`);
-
-          if (serverExtractedText.length > 20) {
-            serverParsedData = parseServerBillText(serverExtractedText);
-          }
         } catch (pdfErr) {
-          console.warn("[Bill Extraction] Erro na leitura interna do PDF no servidor:", pdfErr);
+          console.warn("[Bill Extraction] Leitura interna do PDF no servidor avisou:", pdfErr);
         }
+      }
+
+      // Combine server and client extracted texts
+      const combinedText = [serverExtractedText, extractedClientText].filter(Boolean).join(" ").trim();
+      if (combinedText.length > 15) {
+        serverParsedData = parseServerBillText(combinedText);
       }
 
       // Check for GEMINI_API_KEY
       const apiKey = process.env.GEMINI_API_KEY;
-
-      // If we already extracted valid amount and barcode from server PDF text directly
-      const hasDirectServerMatch = serverParsedData && (serverParsedData.amount > 0 || serverParsedData.barcodeNumber);
 
       if (!apiKey) {
         if (serverParsedData) {
           return res.json({ 
             success: true, 
             data: serverParsedData,
-            extractedServerText: serverExtractedText 
+            extractedServerText: combinedText 
           });
         }
         return res.status(200).json({ 
@@ -462,7 +466,7 @@ REGRAS CRÍTICAS:
         },
       });
 
-      const prompt = `Você é um analista especialista em boletos bancários e faturas de concessionárias de serviços públicos do Brasil (energia elétrica como Equatorial Energia, Enel, Cemig, Copel, CPFL; água como Sabesp, Sanepar; telecom como Claro, Vivo, TIM; e boletos de cobrança de bancos como Banco do Brasil, Bradesco, Itaú, Santander, Caixa, Nubank, Sicredi, Sicoob, etc.).
+      const prompt = `Você é um analista bancário especialista em boletos bancários e faturas de concessionárias de serviços públicos do Brasil (energia elétrica como Equatorial, Enel, Cemig, Copel, CPFL; água como Sabesp, Sanepar; telecom como Claro, Vivo, TIM; e boletos de bancos como Banco do Brasil, Bradesco, Itaú, Santander, Caixa, Nubank, Sicredi, Sicoob, etc.).
 Analise atentamente o documento e extraia os campos com máxima precisão:
 
 1. "beneficiaryName": Nome da empresa beneficiária / concessionária (ex: "EQUATORIAL PARÁ DISTRIB. DE ENERGIA S.A.", "ENEL DISTRIBUIÇÃO", "BANCO DO BRASIL S.A."). Procure no cabeçalho ou no campo BENEFICIÁRIO / CEDENTE.
@@ -476,28 +480,34 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
 9. "payerCpf": CPF ou CNPJ do pagador/titular se presente (ex: "025.803.262-60").
 10. "unitOrContract": Número da conta contrato, unidade consumidora ou instalação (ex: "2.105.447.013-05").`;
 
-      // Supported and resilient models (gemini-3.1-flash-lite is fastest and avoids 503 spikes)
+      // Supported and resilient models
       const candidateModels = [
         "gemini-3.1-flash-lite",
-        "gemini-flash-latest",
         "gemini-3.8-flash",
+        "gemini-flash-latest",
       ];
 
       let resultData: any = null;
 
-      // If we already have extracted text from the PDF, querying Gemini with text is 10x faster and never hits payload timeouts!
+      // Construct content parts: prioritize visual image (JPEG/PNG) and append text
       const contentParts: any[] = [];
-      if (serverExtractedText && serverExtractedText.length > 30) {
-        contentParts.push({
-          text: `${prompt}\n\n=== TEXTO EXTRAÍDO DO DOCUMENTO ===\n${serverExtractedText.substring(0, 8000)}`,
-        });
-      } else {
+      const visualBase64 = cleanImageBase64 || (!isPdf ? cleanBase64 : "");
+      const visualMime = cleanImageBase64 ? "image/jpeg" : (!isPdf ? (mimeType || "image/jpeg") : "");
+
+      if (visualBase64 && visualMime && !visualMime.includes("pdf")) {
         contentParts.push({
           inlineData: {
-            mimeType: mimeType || (isPdf ? "application/pdf" : "image/jpeg"),
-            data: cleanBase64,
+            mimeType: visualMime,
+            data: visualBase64,
           },
         });
+      }
+
+      if (combinedText && combinedText.length > 20) {
+        contentParts.push({
+          text: `${prompt}\n\n=== TEXTO EXTRAÍDO DO DOCUMENTO ===\n${combinedText.substring(0, 10000)}`,
+        });
+      } else {
         contentParts.push({ text: prompt });
       }
 
@@ -554,14 +564,37 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
 
       // Merge AI result with server parsed data
       if (resultData || serverParsedData) {
+        // Amount resolution: prioritize whichever found a real > 0 number
+        let finalAmount = 0;
+        if (resultData?.amount && typeof resultData.amount === "number" && resultData.amount > 0) {
+          finalAmount = resultData.amount;
+        } else if (serverParsedData?.amount && serverParsedData.amount > 0) {
+          finalAmount = serverParsedData.amount;
+        }
+
+        const finalBarcode = resultData?.barcodeNumber || serverParsedData?.barcodeNumber || "";
+
+        // If amount is still 0, attempt to decode from barcode
+        if (finalAmount === 0 && finalBarcode) {
+          const digits = finalBarcode.replace(/\D/g, "");
+          if (digits.length === 47) {
+            const val = parseInt(digits.substring(37, 47), 10) / 100;
+            if (val > 0) finalAmount = val;
+          } else if (digits.length === 48) {
+            const valDigits = digits.substring(4, 11) + digits.substring(12, 16);
+            const val = parseInt(valDigits, 10) / 100;
+            if (val > 0 && val < 1000000) finalAmount = val;
+          }
+        }
+
         const finalData = {
           beneficiaryName: resultData?.beneficiaryName || serverParsedData?.beneficiaryName || "Beneficiário do Boleto",
           beneficiaryCnpj: resultData?.beneficiaryCnpj || serverParsedData?.beneficiaryCnpj || "00.000.000/0001-00",
           beneficiaryBank: resultData?.beneficiaryBank || serverParsedData?.beneficiaryBank || "Banco Emissor",
           beneficiaryAccountType: resultData?.beneficiaryAccountType || serverParsedData?.beneficiaryAccountType || "Conta corrente",
-          amount: (resultData?.amount && resultData.amount > 0) ? resultData.amount : (serverParsedData?.amount || 0),
+          amount: finalAmount,
           dueDate: resultData?.dueDate || serverParsedData?.dueDate || new Date().toLocaleDateString("pt-BR"),
-          barcodeNumber: resultData?.barcodeNumber || serverParsedData?.barcodeNumber || "",
+          barcodeNumber: finalBarcode,
           nossoNumero: resultData?.nossoNumero || serverParsedData?.nossoNumero || "",
           payerName: resultData?.payerName || serverParsedData?.payerName || "",
           payerCpf: resultData?.payerCpf || serverParsedData?.payerCpf || "",
@@ -571,14 +604,14 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
         return res.json({
           success: true,
           data: finalData,
-          extractedServerText: serverExtractedText,
+          extractedServerText: combinedText,
         });
       }
 
       return res.status(200).json({
         success: false,
         fallback: true,
-        extractedServerText: serverExtractedText,
+        extractedServerText: combinedText,
         message: "IA temporariamente ocupada, acionando extrator local.",
       });
     } catch (err: any) {

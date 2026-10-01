@@ -34,8 +34,21 @@ import { CheckCircle2, Sliders, Edit3, ArrowDownLeft } from 'lucide-react';
 const STORAGE_KEY = 'nu_empresas_custom_data_v5';
 
 export default function App() {
-  const [currentScreen, setCurrentScreen] = useState<ScreenName>('Splash');
-  const [screenStack, setScreenStack] = useState<ScreenName[]>(['Splash']);
+  // Se já tem senha: inicia com Splash ("tela toda roxa com a logo normal").
+  // Se é primeiro acesso e não tem senha: inicia pedindo para criar a primeira senha ("Quando acesso a primeira vez pede pra criar a primeira senha").
+  const [currentScreen, setCurrentScreen] = useState<ScreenName>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.accessPin && typeof parsed.accessPin === 'string' && parsed.accessPin.trim().length === 4) {
+          return 'Splash';
+        }
+      }
+    } catch (e) {}
+    return 'Login';
+  });
+  const [screenStack, setScreenStack] = useState<ScreenName[]>(() => [currentScreen]);
   
   // App Custom Data (Persistent in localStorage only)
   const [appData, setAppData] = useState<AppCustomData>(() => {
@@ -240,6 +253,19 @@ export default function App() {
     }
   };
 
+  const handleLockApp = () => {
+    setScreenStack(['Splash']);
+    setCurrentScreen('Splash');
+    showToast('Aplicativo bloqueado.');
+  };
+
+  const handleResetPin = () => {
+    handleUpdateField('accessPin', '');
+    setScreenStack(['Login']);
+    setCurrentScreen('Login');
+    showToast('Senha redefinida. Crie sua nova senha de 4 dígitos.');
+  };
+
   const handleAddContact = (newContact: Contact) => {
     setAppData((prev) => {
       const existingIndex = prev.contacts.findIndex(
@@ -363,7 +389,7 @@ export default function App() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
+              transition={{ duration: 0.12 }}
               className="w-full h-full flex-1"
             >
               <SplashScreen
@@ -378,17 +404,25 @@ export default function App() {
           {currentScreen === 'Login' && (
             <motion.div
               key="login"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              transition={{ duration: 0.2 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
               className="w-full h-full flex-1"
             >
               <LoginScreen
                 appData={appData}
-                onNavigate={() => navigateTo('Home')}
-                skipIntro={skipIntro}
-                onToggleSkipIntro={setSkipIntro}
+                onNavigate={() => {
+                  setScreenStack(['Home']);
+                  setCurrentScreen('Home');
+                }}
+                onPinCreated={(newPin) => {
+                  handleUpdateField('accessPin', newPin);
+                  showToast('Senha criada com sucesso!');
+                  // Fluxo solicitado: "depois inicia o app tela da logo é só faz já pedir a senha com todos a tela sendo um senha igual da imagem"
+                  setScreenStack(['Splash']);
+                  setCurrentScreen('Splash');
+                }}
                 onUpdateField={handleUpdateField}
                 isInlineEditMode={isInlineEditMode}
               />
@@ -627,6 +661,8 @@ export default function App() {
         data={appData}
         onSave={handleSaveAppData}
         onReset={handleResetData}
+        onLockApp={handleLockApp}
+        onResetPin={handleResetPin}
         isInlineEditMode={isInlineEditMode}
         onToggleInlineEditMode={setIsInlineEditMode}
         onTriggerSimulatedPix={handleTriggerSimulatedPix}

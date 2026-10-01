@@ -35,9 +35,11 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
   onConfirm,
 }) => {
   // Editable form state initialized from extracted PDF
-  const [amount, setAmount] = useState<string>(() =>
-    extractedData?.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '0,00'
-  );
+  const [amount, setAmount] = useState<string>(() => {
+    const rawVal = extractedData?.amount;
+    const num = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal || '0').replace(',', '.')) || 0;
+    return num > 0 ? num.toFixed(2).replace('.', ',') : '0,00';
+  });
   const [dueDate, setDueDate] = useState<string>(() => extractedData?.dueDate || new Date().toLocaleDateString('pt-BR'));
   const [receiptDateTime, setReceiptDateTime] = useState<string>(() => formatNubankReceiptDate(new Date()));
   const [barcodeNumber, setBarcodeNumber] = useState<string>(
@@ -65,9 +67,9 @@ export const BillConfirmationModal: React.FC<BillConfirmationModalProps> = ({
   // Whenever extractedData changes or modal opens, update the form fields with newly extracted data
   React.useEffect(() => {
     if (extractedData) {
-      setAmount(
-        extractedData.amount ? extractedData.amount.toFixed(2).replace('.', ',') : '0,00'
-      );
+      const rawVal = extractedData.amount;
+      const num = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal || '0').replace(',', '.')) || 0;
+      setAmount(num > 0 ? num.toFixed(2).replace('.', ',') : '0,00');
       setDueDate(extractedData.dueDate || new Date().toLocaleDateString('pt-BR'));
       setReceiptDateTime(formatNubankReceiptDate(new Date()));
       setBarcodeNumber(extractedData.barcodeNumber || '');

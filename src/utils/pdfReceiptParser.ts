@@ -1,5 +1,5 @@
 import * as pdfjsLib from 'pdfjs-dist';
-import { prepareImageForFastUpload } from './transferReceiptParser';
+import { prepareImageForFastUpload, fileToBase64 } from './transferReceiptParser';
 
 // Configure pdfjs worker using unpkg or fallback to avoid cdnjs version mismatch issues
 try {
@@ -21,6 +21,54 @@ export interface ExtractedBillData {
   payerCpf?: string;
   barcodeNumber?: string;
   rawText?: string;
+}
+
+/**
+ * Renders page 1 of a PDF file to high-resolution JPEG and extracts all text content across pages
+ */
+export async function renderPdfToImageAndText(file: File): Promise<{ imageBase64: string; extractedText: string }> {
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({
+      data: arrayBuffer,
+      useWorkerFetch: false,
+      useSystemFonts: true,
+    } as any).promise;
+
+    let extractedText = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      try {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const str = textContent.items.map((item: any) => item.str || '').join(' ');
+        extractedText += ' ' + str;
+      } catch (e) {}
+    }
+
+    // Render Page 1 to high-resolution JPEG (scale 1.8 for optimal clarity and speed)
+    let imageBase64 = '';
+    try {
+      const page1 = await pdf.getPage(1);
+      const viewport = page1.getViewport({ scale: 1.8 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        await page1.render({ canvasContext: ctx, viewport, canvas } as any).promise;
+        imageBase64 = canvas.toDataURL('image/jpeg', 0.88);
+      }
+    } catch (renderErr) {
+      console.warn('[PDF Renderer] Falha ao renderizar página no canvas:', renderErr);
+    }
+
+    return { imageBase64, extractedText: extractedText.trim() };
+  } catch (err) {
+    console.warn('[PDF Renderer] Erro ao ler PDF no navegador:', err);
+    return { imageBase64: '', extractedText: '' };
+  }
 }
 
 /**
@@ -146,19 +194,39 @@ export function parseLinhaDigitavel(raw: string): Partial<ExtractedBillData> | n
 
 /**
  * Extracts invoice/bill details from a PDF file or Image
- * First leverages Gemini Flash Multimodal AI on the backend, with server-side and client-side fallback.
+ * Uses hybrid architecture: renders page to high-res image for Gemini Vision AI and extracts text for local regex decoding.
  */
 export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillData> {
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+  let imageBase64 = '';
+  let extractedClientText = '';
+  let rawBase64 = '';
+
+  if (isPdf) {
+    const rendered = await renderPdfToImageAndText(file);
+    imageBase64 = rendered.imageBase64;
+    extractedClientText = rendered.extractedText;
+    rawBase64 = await fileToBase64(file);
+  } else {
+    const fastImg = await prepareImageForFastUpload(file);
+    imageBase64 = fastImg.base64Data;
+    rawBase64 = fastImg.base64Data;
+  }
+
   // 1. Try Gemini Vision AI & Server-side extraction via /api/extract-bill
   try {
-    const { base64Data, mimeType } = await prepareImageForFastUpload(file);
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 24000);
+    const timeoutId = setTimeout(() => controller.abort(), 26000);
 
     const response = await fetch('/api/extract-bill', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ base64Data, mimeType }),
+      body: JSON.stringify({
+        base64Data: rawBase64,
+        imageBase64,
+        extractedClientText,
+        mimeType: isPdf ? 'image/jpeg' : (file.type || 'image/jpeg')
+      }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
@@ -166,7 +234,7 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
     if (response.ok) {
       const json = await response.json();
 
-      if (json.data && (json.data.amount > 0 || json.data.barcodeNumber || json.data.beneficiaryName)) {
+      if (json.data) {
         const d = json.data;
         console.log('[Bill Extraction] Dados extraídos recebidos do servidor:', d);
 
@@ -175,6 +243,14 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
         let dueDate = d.dueDate ? d.dueDate.replace(/\//g, '.') : '';
         let nossoNumero = d.nossoNumero || '';
         let beneficiaryBank = d.beneficiaryBank || 'BANCO DO BRASIL S.A.';
+
+        // If server returned 0 for amount, attempt local regex on pre-extracted text
+        if (!amount && extractedClientText) {
+          const localParsed = parseBillText(extractedClientText);
+          if (localParsed.amount > 0) amount = localParsed.amount;
+          if (!dueDate && localParsed.dueDate) dueDate = localParsed.dueDate;
+          if (!barcodeNumber && localParsed.barcodeNumber) barcodeNumber = localParsed.barcodeNumber;
+        }
 
         if (barcodeNumber) {
           const barcodeDecoded = parseLinhaDigitavel(barcodeNumber);
@@ -203,7 +279,6 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
       }
 
       if (json.extractedServerText) {
-        console.log('[Bill Extraction] Processando texto extraído do PDF no servidor...');
         const parsed = parseBillText(json.extractedServerText);
         if (parsed.amount > 0 || parsed.barcodeNumber) {
           return parsed;
@@ -211,10 +286,15 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
       }
     }
   } catch (aiErr) {
-    console.warn('[Bill Extraction] Tentativa de análise remota falhou ou timeout, usando motor local:', aiErr);
+    console.warn('[Bill Extraction] Análise remota com timeout ou offline, acionando motor local:', aiErr);
   }
 
-  // 2. Local fallback using PDF.js textContent extraction
+  // 2. Client fallback using pre-extracted text
+  if (extractedClientText && extractedClientText.length > 20) {
+    return parseBillText(extractedClientText);
+  }
+
+  // 3. Fallback: fresh extraction with PDF.js textContent
   try {
     const arrayBuffer = await file.arrayBuffer();
     const loadingTask = pdfjsLib.getDocument({ 
@@ -234,14 +314,14 @@ export async function extractBillDataFromPdf(file: File): Promise<ExtractedBillD
       fullText += ' ' + pageStrings;
     }
 
-    if (fullText.trim().length > 30) {
+    if (fullText.trim().length > 20) {
       return parseBillText(fullText);
     }
   } catch (pdfErr) {
     console.warn('PDF.js textContent notice, attempting binary string fallback:', pdfErr);
   }
 
-  // 3. Raw binary byte scan fallback
+  // 4. Raw binary byte scan fallback
   try {
     const arrayBuffer = await file.arrayBuffer();
     const decoder = new TextDecoder('latin1');
@@ -342,24 +422,26 @@ export function parseBillText(text: string): ExtractedBillData {
   // 3. Amount (Total a Pagar / Valor do Documento)
   let amount = decodedFromBarcode?.amount || 0;
 
-  // Prioritize "Total a Pagar R$ 534,45" or "(=) VALOR DOCUMENTO 534,45" or "VALOR COBRADO"
-  const amountMatch = clean.match(/(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL|VALOR DO DOCUMENTO|VALOR DOCUMENTO|\(=?\)\s*VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO|VALOR A SER PAGO|VALOR DA FATURA|TOTAL DA FATURA|VALOR TOTAL A PAGAR)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO|VALOR TOTAL|VALOR A PAGAR)\D{0,35}R\$\s*([\d.]+,\d{2})/i) ||
-                      clean.match(/(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i);
-
-  if (amountMatch && amountMatch[1]) {
-    const numStr = amountMatch[1].replace(/\./g, '').replace(',', '.');
-    const parsed = parseFloat(numStr);
-    if (!isNaN(parsed) && parsed > 0) amount = parsed;
-  }
+  const amountPatterns = [
+    /(?:TOTAL\s*A\s*PAGAR|VALOR\s*A\s*PAGAR|TOTAL\s*DA\s*FATURA|VALOR\s*DA\s*FATURA|VALOR\s*DA\s*NOTA(?:\s*FISCAL)?|VALOR\s*DO\s*DOCUMENTO|\(=?\)\s*VALOR\s*DOCUMENTO|VALOR\s*COBRADO|VALOR\s*L[IÍ]QUIDO|VALOR\s*TOTAL(?:\s*DA\s*NOTA)?|VALOR\s*A\s*SER\s*PAGO|TOTAL\s*A\s*RECOLHER|TOTAL\s*GERAL|VALOR\s*FINAL|VALOR\s*PRINCIPAL|TOTAL\s*CONSOLIDADO|TOTAL\s*A\s*DEBITAR)[^\d\n\r]{0,35}?([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2})/i,
+    /(?:TOTAL|VALOR)[^\d\n\r]{0,25}?(?:R\$|\(R\$\))[^\d\n\r]{0,10}?([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2})/i,
+    /(?:Total a Pagar|TOTAL A PAGAR|VALOR A PAGAR|VALOR TOTAL|VALOR DO DOCUMENTO|VALOR DOCUMENTO|\(=?\)\s*VALOR DOCUMENTO|VALOR COBRADO|VALOR LIQUIDO|VALOR A SER PAGO|VALOR DA FATURA|TOTAL DA FATURA|VALOR TOTAL A PAGAR)[\s:(=)]*(?:R\$)?\s*([\d.]+,\d{2})/i,
+    /(?:Total a Pagar|VALOR DO DOCUMENTO|VALOR LIQUIDO|VALOR TOTAL|VALOR A PAGAR)\D{0,35}R\$\s*([\d.]+,\d{2})/i,
+    /(?:VALOR\s+\(=?\)\s*VALOR\s+DOCUMENTO)\s*\d*\s*(?:R\$)?\s*([\d.]+,\d{2})/i,
+    /R\$\s*([\d.]+,\d{2})/
+  ];
 
   if (amount === 0) {
-    // Look for general R$ followed by value
-    const generalR$ = clean.match(/R\$\s*([\d.]+,\d{2})/g);
-    if (generalR$ && generalR$.length > 0) {
-      const last = generalR$[generalR$.length - 1].replace(/R\$\s*/, '').replace(/\./g, '').replace(',', '.');
-      const parsed = parseFloat(last);
-      if (!isNaN(parsed) && parsed > 0) amount = parsed;
+    for (const pat of amountPatterns) {
+      const m = clean.match(pat);
+      if (m && m[1]) {
+        const numStr = m[1].replace(/\./g, '').replace(',', '.');
+        const parsed = parseFloat(numStr);
+        if (!isNaN(parsed) && parsed > 0 && parsed < 10000000) {
+          amount = parsed;
+          break;
+        }
+      }
     }
   }
 
