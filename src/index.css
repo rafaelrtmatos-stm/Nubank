@@ -5,6 +5,18 @@
   --sab: env(safe-area-inset-bottom, 0px);
 }
 
+/* Eliminate mobile 300ms tap delay and touch lag across entire app */
+* {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+button, a, [role="button"] {
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 /* Safe area utilities for mobile devices (iPhone notch, Dynamic Island, Android punch hole) */
 .safe-top-header {
   padding-top: max(env(safe-area-inset-top, 0px), 3.25rem);

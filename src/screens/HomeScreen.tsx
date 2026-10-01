@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   User, 
   Eye, 
@@ -20,20 +20,27 @@ import {
   X,
   Zap,
   Copy,
-  Edit2,
-  Dices,
   CheckCircle2,
   Monitor,
   Hexagon,
-  Image as ImageIcon,
-  Pencil,
   Users,
   RotateCcw,
-  CornerUpLeft,
-  Heart,
   Store,
   UserPlus,
-  FileText
+  MoreVertical,
+  Link2,
+  Smartphone,
+  Lock,
+  Plus,
+  ArrowUpDown,
+  BarChart3,
+  Calendar,
+  MessageSquare,
+  DollarSign,
+  Radio,
+  CornerUpLeft,
+  Heart,
+  Pencil
 } from 'lucide-react';
 import { AppCustomData, ScreenName, Transaction } from '../types';
 import { EditableText } from '../components/EditableText';
@@ -72,6 +79,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const [showCobrarModal, setShowCobrarModal] = useState(false);
   const [showQuickBalanceModal, setShowQuickBalanceModal] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [activeBottomTab, setActiveBottomTab] = useState<'dia' | 'cobrancas' | 'gestao'>('dia');
 
   // Triple click handler on avatar: 1 click = authentic Nubank profile card, 3 clicks = admin configuration
   const clickCountRef = useRef<number>(0);
@@ -90,9 +98,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         try {
           navigator.vibrate([40, 40, 40]);
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       }
       setShowProfileModal(false);
       onOpenEditModal();
@@ -104,31 +110,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         setShowProfileModal(true);
       }
       clickCountRef.current = 0;
-    }, 380);
+    }, 350);
   };
 
-  // Avatar inside the opened profile modal can also trigger admin configuration if triple-clicked
-  const modalAvatarClicksRef = useRef<number>(0);
-  const modalAvatarTimeoutRef = useRef<any>(null);
-
   const handleModalAvatarClick = () => {
-    modalAvatarClicksRef.current += 1;
-    if (modalAvatarTimeoutRef.current) clearTimeout(modalAvatarTimeoutRef.current);
-
-    if (modalAvatarClicksRef.current >= 3) {
-      modalAvatarClicksRef.current = 0;
-      if (typeof navigator !== 'undefined' && navigator.vibrate) {
-        try {
-          navigator.vibrate([40, 40, 40]);
-        } catch (e) {}
-      }
-      setShowProfileModal(false);
-      onOpenEditModal();
-    } else {
-      modalAvatarTimeoutRef.current = setTimeout(() => {
-        modalAvatarClicksRef.current = 0;
-      }, 420);
-    }
+    setShowProfileModal(false);
+    onOpenEditModal();
   };
 
   const handleCopyAccountInfo = () => {
@@ -146,7 +133,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   });
 
   return (
-    <div className="flex flex-col h-full w-full bg-white select-none overflow-y-auto pb-16">
+    <div className="flex flex-col h-full w-full bg-white select-none overflow-y-auto pb-28 relative">
       {/* Toast Feedback */}
       {toastMessage && (
         <motion.div
@@ -160,30 +147,33 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </motion.div>
       )}
 
-      {/* Header PJ Purple Zone with Safe Area Top */}
+      {/* Header PJ Purple Zone with Safe Area Top (Faithful to Screenshot) */}
       <div 
-        className="bg-[#5f259f] text-white pb-6 px-5 transition-all"
+        className="bg-[#5f259f] text-white pb-5 px-5 transition-all"
         style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 3.25rem)' }}
       >
         {/* Top Header Icons */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            {/* Store Icon with subtle dot */}
+            {/* Store Icon with subtle white dot (Casinha) */}
             <div 
-              className="relative w-11 h-11 rounded-2xl bg-white/15 hover:bg-white/20 active:scale-95 flex items-center justify-center transition-colors cursor-pointer text-white"
-              title="Minha loja PJ"
+              onClick={() => {
+                setShowProfileModal(true);
+              }}
+              className="relative w-10 h-10 rounded-full bg-white/20 hover:bg-white/25 active:scale-95 flex items-center justify-center transition-colors cursor-pointer text-white"
+              title="Informações da conta PJ"
             >
-              <Store className="w-5 h-5 text-white/90" />
-              <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-white/70" />
+              <Store className="w-5 h-5 text-white" />
+              <span className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-white border-2 border-[#5f259f]" />
             </div>
 
-            {/* Profile Avatar Button */}
+            {/* Profile Avatar Button (1 click = profile, 3 clicks = admin modal) */}
             <button
               id="btn-home-profile"
               onClick={handleLeftMenuClick}
-              className="w-11 h-11 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs font-bold text-sm text-white"
+              className="w-10 h-10 rounded-full bg-white/20 hover:bg-white/30 active:scale-95 flex items-center justify-center transition-all cursor-pointer relative shadow-xs font-bold text-sm text-white"
               aria-label="Perfil do usuário"
-              title="Toque para abrir perfil • Toque 3x para configurações"
+              title="Perfil Nu Empresas (toque 3x para configurações)"
             >
               <User className="w-5 h-5 text-white" />
             </button>
@@ -200,301 +190,311 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </button>
             <button
               id="btn-home-help"
-              onClick={() => alert("Central de Atendimento Nu Empresas: Suporte 24 horas.")}
+              onClick={() => {
+                setToastMessage("Ajuda Nu Empresas: suporte 24h");
+                setTimeout(() => setToastMessage(null), 2000);
+              }}
               className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors cursor-pointer text-white"
               aria-label="Ajuda"
             >
               <HelpCircle className="w-5 h-5" />
             </button>
             <button
-              onClick={() => alert("Convide sócios ou envie convite Nu")}
+              onClick={() => {
+                setToastMessage("Convite de sócios e colaboradores");
+                setTimeout(() => setToastMessage(null), 2000);
+              }}
               className="w-10 h-10 hover:bg-white/10 rounded-full flex items-center justify-center transition-colors cursor-pointer text-white"
-              aria-label="Convidar"
+              aria-label="Convidar sócios"
             >
               <UserPlus className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        {/* Company / Greeting info */}
-        <div className="mt-4">
-          <p className="text-white/80 text-xs font-medium uppercase tracking-wider">
-            Olá{appData.userName ? `, ` : ' '}
-            <EditableText
-              value={appData.userName || (isInlineEditMode ? 'Definir Nome' : 'Conta PJ')}
-              onSave={(val) => onUpdateField('userName', val)}
-              isInlineEditMode={isInlineEditMode}
-            />
-          </p>
-          {(appData.companyName || isInlineEditMode) && (
-            <div className="text-white/95 text-xs sm:text-sm font-semibold truncate flex items-center gap-1.5 mt-0.5">
-              <Building2 className="w-3.5 h-3.5 text-purple-200 shrink-0" />
-              <EditableText
-                value={appData.companyName || 'Definir Empresa'}
-                onSave={(val) => onUpdateField('companyName', val)}
-                isInlineEditMode={isInlineEditMode}
-              />
+        {/* Carousel of Cards inside Purple Header (Exactly matching IMG_7624.png) */}
+        <div className="mt-5 flex gap-3 overflow-x-auto pb-1 pt-1 no-scrollbar -mx-5 px-5">
+          {/* Card 1 - White Reminder Card */}
+          <div 
+            onClick={() => onNavigate('PaymentOptions')}
+            className="bg-white text-purple-900 rounded-2xl p-3.5 shadow-sm min-w-[210px] sm:min-w-[225px] h-[105px] flex flex-col justify-between shrink-0 cursor-pointer active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-start justify-between">
+              <div className="relative">
+                <div className="w-7 h-7 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <ReceiptText className="w-4 h-4 text-[#5f259f]" />
+                </div>
+                <div className="absolute -bottom-1 -left-1 w-4 h-4 bg-white rounded-md shadow-2xs flex items-center justify-center border border-purple-200">
+                  <Calendar className="w-2.5 h-2.5 text-[#5f259f]" />
+                </div>
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onNavigate('PaymentOptions');
+                }}
+                className="text-neutral-400 hover:text-neutral-700 p-0.5"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-[#5f259f] leading-snug">
+                {appData.reminderTitle || 'Lembrete de conta: Realize o Pagamento'}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2 - Purple Link Card */}
+          <div 
+            onClick={() => setShowCobrarModal(true)}
+            className="bg-white/15 text-white rounded-2xl p-3.5 min-w-[210px] sm:min-w-[225px] h-[105px] flex flex-col justify-between shrink-0 border border-white/10 cursor-pointer active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                <Link2 className="w-4 h-4 text-white" />
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCobrarModal(true);
+                }}
+                className="text-white/60 hover:text-white p-0.5"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white leading-snug">
+                Link: agora você recebe na hora
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3 - Purple QR Code Card */}
+          <div 
+            onClick={() => setShowCobrarModal(true)}
+            className="bg-white/15 text-white rounded-2xl p-3.5 min-w-[190px] sm:min-w-[200px] h-[105px] flex flex-col justify-between shrink-0 border border-white/10 cursor-pointer active:scale-[0.98] transition-transform"
+          >
+            <div className="flex items-start justify-between">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center">
+                <QrCode className="w-4 h-4 text-white" />
+              </div>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCobrarModal(true);
+                }}
+                className="text-white/60 hover:text-white p-0.5"
+              >
+                <MoreVertical className="w-4 h-4" />
+              </button>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white leading-snug">
+                Peça seu QR Code
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Account Balance Section (100% Faithful to Screenshot - Clean, No Pencil) */}
+      <div className="px-5 pt-6 pb-2">
+        <div 
+          onClick={() => onNavigate('Extrato')}
+          className="flex items-center justify-between cursor-pointer group"
+          title="Toque para abrir o extrato da conta"
+        >
+          <h2 className="text-[17px] font-bold text-neutral-900 tracking-tight flex items-center gap-1.5">
+            {appData.accountTitle || 'Conta Nu Empresas'}
+          </h2>
+          <ChevronRight className="w-5 h-5 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
+        </div>
+
+        {/* Balance Display (NO PENCIL ICON) */}
+        <div className="mt-1">
+          {isBalanceVisible ? (
+            <div 
+              onClick={() => onNavigate('Extrato')}
+              className="text-2xl sm:text-[28px] font-bold text-neutral-900 tracking-tight cursor-pointer"
+            >
+              {formattedBalance}
+            </div>
+          ) : (
+            <div 
+              onClick={() => onNavigate('Extrato')}
+              className="h-8 flex items-center gap-1.5 py-1 cursor-pointer"
+            >
+              <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
+              <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
+              <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
+              <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
             </div>
           )}
         </div>
 
-        {/* Reminder Card */}
-        {appData.showReminder && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white text-[#5f259f] rounded-2xl p-4 mt-4 shadow-sm flex items-center justify-between"
-          >
-            <div className="flex items-center gap-3 flex-1 mr-2">
-              <div className="w-9 h-9 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
-                <Bell className="w-5 h-5 text-[#5f259f]" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-neutral-800 truncate">
-                  <EditableText
-                    value={appData.reminderTitle}
-                    onSave={(val) => onUpdateField('reminderTitle', val)}
-                    isInlineEditMode={isInlineEditMode}
-                  />
-                </p>
-                <p className="text-[11px] text-neutral-500 truncate">
-                  <EditableText
-                    value={appData.reminderSubtitle}
-                    onSave={(val) => onUpdateField('reminderSubtitle', val)}
-                    isInlineEditMode={isInlineEditMode}
-                  />
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                id="btn-reminder-pay"
-                onClick={() => onNavigate('PaymentOptions')}
-                className="text-xs font-bold text-[#820AD1] bg-purple-50 hover:bg-purple-100 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-              >
-                Pagar
-              </button>
-              <button
-                onClick={() => onUpdateField('showReminder', false)}
-                className="text-xs text-neutral-400 hover:text-neutral-600 p-1"
-                aria-label="Fechar lembrete"
-              >
-                ✕
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </div>
+        {/* Pill Button: + Vincular conta */}
+        <button
+          type="button"
+          onClick={() => {
+            setToastMessage("Funcionalidade Open Finance / Vincular conta");
+            setTimeout(() => setToastMessage(null), 2200);
+          }}
+          className="mt-3 bg-neutral-100 hover:bg-neutral-200 active:scale-95 text-neutral-800 text-xs font-semibold px-3 py-1.5 rounded-full inline-flex items-center gap-1.5 cursor-pointer transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5 text-neutral-600" />
+          <span>Vincular conta</span>
+        </button>
 
-      {/* Main Account Balance Section */}
-      <div className="px-5 pt-6 pb-2">
-        <div className="flex items-center justify-between cursor-pointer group">
-          <div className="flex-1">
-            <div 
-              onClick={() => onNavigate('Extrato')}
-              className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity"
-              title="Toque para abrir o extrato da conta"
-            >
-              <h2 className="text-base font-bold text-neutral-900">
-                <EditableText
-                  value={appData.accountTitle}
-                  onSave={(val) => onUpdateField('accountTitle', val)}
-                  isInlineEditMode={isInlineEditMode}
-                />
-              </h2>
-              <ChevronRight className="w-4 h-4 text-neutral-400 group-hover:translate-x-0.5 transition-transform" />
-            </div>
-            <div className="mt-1 flex items-center gap-2">
-              {isBalanceVisible ? (
-                <div className="flex items-center gap-2">
-                  <span 
-                    onClick={() => {
-                      if (!isInlineEditMode) {
-                        onNavigate('Extrato');
-                      }
-                    }}
-                    className="text-2xl sm:text-[28px] font-bold text-neutral-900 tracking-tight cursor-pointer hover:text-[#820AD1] transition-colors"
-                    title="Toque para ver o extrato"
-                  >
-                    {isInlineEditMode ? (
-                      <span className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                        <span>R$ </span>
-                        <EditableText
-                          type="currency"
-                          value={appData.balance}
-                          onSave={(val) => onUpdateField('balance', parseCurrency(val))}
-                          isInlineEditMode={isInlineEditMode}
-                        />
-                      </span>
-                    ) : (
-                      <span>{formattedBalance}</span>
-                    )}
-                  </span>
-                  
-                  {/* Quick Edit Balance Button */}
-                  {!isInlineEditMode && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowQuickBalanceModal(true);
-                      }}
-                      className="p-1 rounded-full text-neutral-400 hover:text-[#820AD1] hover:bg-purple-50 transition-colors cursor-pointer"
-                      title="Editar saldo da conta"
-                      aria-label="Editar saldo"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <div 
-                  onClick={() => onNavigate('Extrato')}
-                  className="h-8 flex items-center gap-1.5 py-1 cursor-pointer"
-                  title="Toque para abrir o extrato"
-                >
-                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-neutral-300" />
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Horizontal Action Buttons Carousel */}
-        <div className="mt-5 flex gap-4 overflow-x-auto pb-3 pt-1 no-scrollbar -mx-5 px-5">
-          {/* Pagar */}
-          <button
-            id="btn-action-pay"
-            onClick={() => onNavigate('PaymentOptions')}
-            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
-          >
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
-              <Barcode className="w-7 h-7 text-neutral-900" />
-            </div>
-            <span className="text-xs font-bold text-neutral-800">Pagar</span>
-          </button>
-
-          {/* Área Pix */}
+        {/* Horizontal Action Buttons Carousel (Faithful to Screenshot) */}
+        <div className="mt-6 flex gap-4 overflow-x-auto pb-3 pt-1 no-scrollbar -mx-5 px-5 items-start">
+          {/* 1. Área Pix e Transferir */}
           <button
             id="btn-action-pix"
             onClick={() => onNavigate('AreaPix')}
             className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
           >
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all relative">
-              <LayoutGrid className="w-7 h-7 text-neutral-900" />
-              <span className="absolute -top-1 -right-1 bg-[#820AD1] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-xs">
-                Pix
+            <div className="w-16 h-16 rounded-full bg-neutral-100 group-hover:bg-neutral-200 group-active:scale-95 flex items-center justify-center transition-all">
+              {/* Authentic Pix 4-diamond shape */}
+              <div className="grid grid-cols-2 gap-0.5 rotate-45">
+                <div className="w-2 h-2 rounded-[2px] bg-neutral-900" />
+                <div className="w-2 h-2 rounded-[2px] bg-neutral-900" />
+                <div className="w-2 h-2 rounded-[2px] bg-neutral-900" />
+                <div className="w-2 h-2 rounded-[2px] bg-neutral-900" />
+              </div>
+            </div>
+            <span className="text-[11px] sm:text-xs font-medium text-neutral-800 text-center max-w-[76px] leading-tight">
+              Área Pix e Transferir
+            </span>
+          </button>
+
+          {/* 2. Tap to Pay no iPhone */}
+          <button
+            id="btn-action-taptopay"
+            onClick={() => setShowCobrarModal(true)}
+            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer relative"
+          >
+            <div className="w-16 h-16 rounded-full bg-neutral-100 group-hover:bg-neutral-200 group-active:scale-95 flex items-center justify-center transition-all relative">
+              <Smartphone className="w-6 h-6 text-neutral-900" />
+              <span className="absolute -bottom-1 bg-[#5f259f] text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full shadow-2xs leading-tight">
+                Na hora
               </span>
             </div>
-            <span className="text-xs font-bold text-neutral-800">Área Pix</span>
+            <span className="text-[11px] sm:text-xs font-medium text-neutral-800 text-center max-w-[78px] leading-tight">
+              Tap to Pay no iPhone
+            </span>
           </button>
 
-          {/* Ler QR code */}
+          {/* 3. Cobrar com link */}
           <button
-            id="btn-action-scan-qr"
-            onClick={() => onNavigate('ScanQrCode')}
-            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
-          >
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
-              <QrCode className="w-7 h-7 text-neutral-900" />
-            </div>
-            <span className="text-xs font-bold text-neutral-800">Ler QR code</span>
-          </button>
-
-          {/* Transferir */}
-          <button
-            id="btn-action-transfer"
-            onClick={() => onNavigate('SelectRecipient')}
-            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
-          >
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
-              <ArrowUpRight className="w-7 h-7 text-neutral-900" />
-            </div>
-            <span className="text-xs font-bold text-neutral-800">Transferir</span>
-          </button>
-
-          {/* Cobrar */}
-          <button
-            id="btn-action-charge"
+            id="btn-action-cobrar-link"
             onClick={() => setShowCobrarModal(true)}
-            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
+            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer relative"
           >
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
-              <QrCode className="w-7 h-7 text-neutral-900" />
+            <div className="w-16 h-16 rounded-full bg-neutral-100 group-hover:bg-neutral-200 group-active:scale-95 flex items-center justify-center transition-all relative">
+              <Link2 className="w-6 h-6 text-neutral-900" />
+              <span className="absolute -bottom-1 bg-[#5f259f] text-white text-[9px] font-bold px-1.5 py-0.2 rounded-full shadow-2xs leading-tight">
+                Na hora
+              </span>
             </div>
-            <span className="text-xs font-bold text-neutral-800">Cobrar</span>
+            <span className="text-[11px] sm:text-xs font-medium text-neutral-800 text-center max-w-[76px] leading-tight">
+              Cobrar com link
+            </span>
           </button>
 
-          {/* Extrato */}
+          {/* 4. Caixinhas PJ */}
+          <button
+            id="btn-action-caixinhas"
+            onClick={() => {
+              setToastMessage("Caixinhas PJ: rendendo a 100% do CDI");
+              setTimeout(() => setToastMessage(null), 2500);
+            }}
+            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-full bg-neutral-100 group-hover:bg-neutral-200 group-active:scale-95 flex items-center justify-center transition-all">
+              <Lock className="w-6 h-6 text-neutral-900" />
+            </div>
+            <span className="text-[11px] sm:text-xs font-medium text-neutral-800 text-center max-w-[76px] leading-tight">
+              Caixinhas PJ
+            </span>
+          </button>
+
+          {/* 5. Pagar */}
+          <button
+            id="btn-action-pay"
+            onClick={() => onNavigate('PaymentOptions')}
+            className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
+          >
+            <div className="w-16 h-16 rounded-full bg-neutral-100 group-hover:bg-neutral-200 group-active:scale-95 flex items-center justify-center transition-all">
+              <Barcode className="w-6 h-6 text-neutral-900" />
+            </div>
+            <span className="text-[11px] sm:text-xs font-medium text-neutral-800 text-center max-w-[76px] leading-tight">
+              Pagar
+            </span>
+          </button>
+
+          {/* 6. Extrato */}
           <button
             id="btn-action-statement"
             onClick={() => onNavigate('Extrato')}
             className="flex flex-col items-center gap-2 shrink-0 group cursor-pointer"
           >
-            <div className="w-16 h-16 rounded-full bg-[#f5f5f5] group-hover:bg-[#ebebeb] group-active:scale-95 flex items-center justify-center transition-all">
-              <ReceiptText className="w-7 h-7 text-neutral-900" />
+            <div className="w-16 h-16 rounded-full bg-neutral-100 group-hover:bg-neutral-200 group-active:scale-95 flex items-center justify-center transition-all">
+              <ReceiptText className="w-6 h-6 text-neutral-900" />
             </div>
-            <span className="text-xs font-bold text-neutral-800">Extrato</span>
+            <span className="text-[11px] sm:text-xs font-medium text-neutral-800 text-center max-w-[76px] leading-tight">
+              Extrato
+            </span>
           </button>
         </div>
       </div>
 
-      <div className="h-1.5 bg-[#f0f1f5] my-2" />
-
-      {/* Meus Cartões Section */}
+      {/* Tap to Pay Promo Banner (Faithful to Screenshot) */}
       <div className="px-5 py-2">
-        <div className="bg-[#f5f5f5] hover:bg-[#ededed] active:bg-[#e5e5e5] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-colors">
-          <div className="flex items-center gap-3">
-            <CreditCard className="w-5 h-5 text-neutral-700" />
-            <span className="text-sm font-semibold text-neutral-800">Meus cartões PJ</span>
+        <div 
+          onClick={() => setShowCobrarModal(true)}
+          className="bg-neutral-100 rounded-2xl p-4 flex flex-col justify-between cursor-pointer hover:bg-neutral-200/80 transition-colors shadow-2xs"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs sm:text-[13px] text-neutral-800 leading-snug flex-1">
+              <span className="font-bold text-neutral-950">Tap to Pay:</span> venda com a menor taxa e dinheiro na hora.
+            </p>
+            {/* Visual Icon Badge matching Screenshot */}
+            <div className="w-10 h-10 rounded-2xl bg-purple-100 flex items-center justify-center shrink-0 border border-purple-200/60 shadow-2xs">
+              <div className="w-6 h-6 rounded-full bg-emerald-400 flex items-center justify-center text-neutral-950 font-black text-[11px]">
+                $
+              </div>
+            </div>
           </div>
-          <div className="text-right">
-            <span className="text-xs text-[#820AD1] font-bold">
-              <EditableText
-                value={appData.creditCardLimit}
-                onSave={(val) => onUpdateField('creditCardLimit', val)}
-                isInlineEditMode={isInlineEditMode}
-              />
-            </span>
+
+          {/* Carousel dots indicator */}
+          <div className="flex items-center justify-center gap-1.5 mt-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-900" />
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
           </div>
         </div>
       </div>
 
-      {/* Nu Empresas Highlights Banner */}
-      {/* Banner Promocional / Capital de Giro (apenas se configurado) */}
-      {(appData.bannerTitle || isInlineEditMode) && (
-        <div className="px-5 py-2">
-          <div className="bg-gradient-to-r from-purple-50 to-indigo-50/50 border border-purple-100 rounded-2xl p-4 flex items-center justify-between">
-            <div>
-              <p className="text-xs font-bold text-[#820AD1]">
-                <EditableText
-                  value={appData.bannerTitle || 'Título do Banner'}
-                  onSave={(val) => onUpdateField('bannerTitle', val)}
-                  isInlineEditMode={isInlineEditMode}
-                />
-              </p>
-              <p className="text-[12px] text-neutral-600 mt-0.5">
-                <EditableText
-                  value={appData.bannerSubtitle || 'Subtítulo do Banner'}
-                  onSave={(val) => onUpdateField('bannerSubtitle', val)}
-                  isInlineEditMode={isInlineEditMode}
-                />
-              </p>
-            </div>
-            <button className="text-xs font-bold text-[#820AD1] bg-white px-3 py-1.5 rounded-lg border border-purple-200 shadow-2xs shrink-0 ml-2">
-              Simular
-            </button>
+      {/* Meus Cartões PJ Section */}
+      <div className="px-5 py-2">
+        <div 
+          onClick={() => {
+            setToastMessage("Meus cartões PJ ativos");
+            setTimeout(() => setToastMessage(null), 2000);
+          }}
+          className="bg-neutral-100 hover:bg-neutral-200/80 active:bg-neutral-200 rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <Smartphone className="w-5 h-5 text-neutral-800" />
+            <span className="text-xs sm:text-sm font-semibold text-neutral-900">Meus cartões PJ</span>
           </div>
+          <ChevronRight className="w-4 h-4 text-neutral-400" />
         </div>
-      )}
+      </div>
 
-      <div className="h-1.5 bg-[#f0f1f5] my-3" />
-
-      {/* Recent Activity / Extrato */}
-      <div id="recent-activity-section" className="px-5 pt-2">
+      {/* Recent Activity / Extrato Section */}
+      <div id="recent-activity-section" className="px-5 pt-3">
         <div className="flex items-center justify-between mb-3">
           <div 
             onClick={() => onNavigate('Extrato')}
@@ -504,32 +504,29 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <h3 className="text-sm font-bold text-neutral-900">Histórico de Transações</h3>
             <ChevronRight className="w-4 h-4 text-neutral-400" />
           </div>
-          <div className="flex items-center gap-3">
-            <button 
-              onClick={() => onNavigate('Extrato')}
-              className="text-xs text-[#820AD1] font-semibold hover:underline cursor-pointer"
-            >
-              Ver extrato
-            </button>
-          </div>
+          <button 
+            onClick={() => onNavigate('Extrato')}
+            className="text-xs text-[#5f259f] font-semibold hover:underline cursor-pointer"
+          >
+            Ver tudo
+          </button>
         </div>
 
-        <div className="space-y-3">
-          {appData.transactions.map((tx, idx) => {
+        <div className="space-y-2.5">
+          {appData.transactions.slice(0, 5).map((tx, idx) => {
             const isNegative = tx.amount < 0;
             const isBill = tx.type === 'bill_payment' || tx.title?.toLowerCase().includes('boleto') || tx.subtitle?.toLowerCase().includes('boleto');
             return (
               <div
                 key={tx.id || idx}
                 onClick={() => onNavigate('Extrato')}
-                className="flex items-center justify-between p-3.5 rounded-2xl hover:bg-neutral-50 active:bg-neutral-100 border border-neutral-100 transition-colors cursor-pointer"
-                title="Toque para ver detalhes no extrato"
+                className="flex items-center justify-between p-3 rounded-2xl hover:bg-neutral-50 active:bg-neutral-100 border border-neutral-100 transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                    isBill ? 'bg-purple-50 text-[#820AD1]' : isNegative ? 'bg-neutral-100 text-neutral-600' : 'bg-emerald-50 text-emerald-600'
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
+                    isBill ? 'bg-purple-50 text-[#5f259f]' : isNegative ? 'bg-neutral-100 text-neutral-600' : 'bg-emerald-50 text-emerald-600'
                   }`}>
-                    {isBill ? <Barcode className="w-5 h-5" /> : isNegative ? <ArrowUpRight className="w-5 h-5" /> : <ArrowDownLeft className="w-5 h-5" />}
+                    {isBill ? <Barcode className="w-4 h-4" /> : isNegative ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownLeft className="w-4 h-4" />}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-neutral-900 truncate">{tx.title}</p>
@@ -538,7 +535,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </div>
                 </div>
                 <div className="text-right shrink-0">
-                  <span className={`text-xs sm:text-sm font-bold ${
+                  <span className={`text-xs font-bold ${
                     isNegative ? 'text-neutral-900' : 'text-emerald-600'
                   }`}>
                     {isBalanceVisible ? (
@@ -551,15 +548,64 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
             );
           })}
-          {appData.transactions.length === 0 && (
-            <div className="py-8 text-center text-neutral-400 bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 p-4">
-              <p className="text-xs">Nenhuma movimentação recente cadastrada.</p>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* User Profile Modal - Authentic Nubank PJ Drawer */}
+      {/* Floating Bottom Navigation Bar (Dock matching Screenshot) */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/95 backdrop-blur-md rounded-full px-2 py-1.5 shadow-2xl border border-neutral-200/60 flex items-center gap-1 sm:gap-2">
+        {/* Dia a dia (Selected) */}
+        <button
+          type="button"
+          onClick={() => setActiveBottomTab('dia')}
+          className={`px-3.5 py-1.5 rounded-full flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+            activeBottomTab === 'dia'
+              ? 'bg-purple-100 text-[#5f259f] font-bold'
+              : 'text-neutral-500 font-medium hover:text-neutral-900'
+          }`}
+        >
+          <ArrowUpDown className="w-4 h-4" />
+          <span className="text-[10px] leading-none">Dia a dia</span>
+        </button>
+
+        {/* Cobranças */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveBottomTab('cobrancas');
+            setShowCobrarModal(true);
+          }}
+          className={`px-3.5 py-1.5 rounded-full flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+            activeBottomTab === 'cobrancas'
+              ? 'bg-purple-100 text-[#5f259f] font-bold'
+              : 'text-neutral-500 font-medium hover:text-neutral-900'
+          }`}
+        >
+          <div className="relative">
+            <MessageSquare className="w-4 h-4" />
+            <DollarSign className="w-2.5 h-2.5 absolute top-0.5 left-0.5 text-neutral-600" />
+          </div>
+          <span className="text-[10px] leading-none">Cobranças</span>
+        </button>
+
+        {/* Gestão */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveBottomTab('gestao');
+            onNavigate('Extrato');
+          }}
+          className={`px-3.5 py-1.5 rounded-full flex flex-col items-center gap-0.5 transition-all cursor-pointer ${
+            activeBottomTab === 'gestao'
+              ? 'bg-purple-100 text-[#5f259f] font-bold'
+              : 'text-neutral-500 font-medium hover:text-neutral-900'
+          }`}
+        >
+          <BarChart3 className="w-4 h-4" />
+          <span className="text-[10px] leading-none">Gestão</span>
+        </button>
+      </div>
+
+      {/* User Profile / Store Drawer Modal - 100% Faithful to IMG_7625.png */}
       {showProfileModal && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-[2px]">
           <motion.div
@@ -569,8 +615,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             transition={{ type: "spring", damping: 28, stiffness: 300 }}
             className="bg-white rounded-t-[28px] sm:rounded-3xl w-full max-w-md pt-5 pb-6 px-6 text-neutral-900 shadow-2xl overflow-y-auto max-h-[92vh]"
           >
-            {/* Top Icons Bar */}
-            <div className="flex items-center justify-between pb-2">
+            {/* Top Icons Bar: X on left, Monitor, Hexagon, Bell with purple dot on right */}
+            <div className="flex items-center justify-between pb-3">
               <button
                 id="btn-close-profile-modal"
                 onClick={() => setShowProfileModal(false)}
@@ -580,170 +626,167 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <X className="w-6 h-6 stroke-[2]" />
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
                   onClick={() => alert("Modo apresentação / tela externa")}
-                  className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-900 transition-colors cursor-pointer"
+                  className="w-9 h-9 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-800 transition-colors cursor-pointer"
                   aria-label="Modo monitor"
                 >
                   <Monitor className="w-5 h-5 stroke-[1.8]" />
                 </button>
 
                 <button
-                  onClick={() => alert("Configurações do aplicativo")}
-                  className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-900 transition-colors cursor-pointer"
-                  aria-label="Opções"
+                  onClick={() => {
+                    setShowProfileModal(false);
+                    onOpenEditModal();
+                  }}
+                  className="w-9 h-9 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-800 transition-colors cursor-pointer"
+                  title="Painel de Edição e Configurações"
+                  aria-label="Configurações"
                 >
                   <Hexagon className="w-5 h-5 stroke-[1.8]" />
                 </button>
 
-                <div className="relative">
-                  <button
-                    onClick={() => alert("Notificações da conta")}
-                    className="w-10 h-10 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-900 transition-colors cursor-pointer"
-                    aria-label="Notificações"
-                  >
-                    <Bell className="w-5 h-5 stroke-[1.8]" />
-                  </button>
-                  <span className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-[#820AD1]" />
-                </div>
+                <button
+                  onClick={() => {
+                    setToastMessage("Notificações Nu Empresas ativadas");
+                    setTimeout(() => setToastMessage(null), 2000);
+                  }}
+                  className="relative w-9 h-9 rounded-full hover:bg-neutral-100 flex items-center justify-center text-neutral-800 transition-colors cursor-pointer"
+                  aria-label="Notificações"
+                >
+                  <Bell className="w-5 h-5 stroke-[1.8]" />
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#5f259f]" />
+                </button>
               </div>
             </div>
 
-            {/* Profile Info Header */}
-            <div className="flex items-center gap-3.5 mt-2">
+            {/* Profile / Business Info Row */}
+            <div className="flex items-center gap-3.5 py-3">
               <div 
-                onClick={handleModalAvatarClick}
-                className="relative w-14 h-14 rounded-full bg-[#f0f1f5] flex items-center justify-center text-neutral-700 shrink-0 cursor-pointer select-none active:scale-95 transition-transform"
-                title="Avatar • Toque 3x para configurações do administrador"
+                onClick={() => {
+                  setShowProfileModal(false);
+                  onOpenEditModal();
+                }}
+                className="w-12 h-12 rounded-2xl bg-neutral-100 border border-neutral-200/80 flex items-center justify-center relative cursor-pointer group shrink-0"
+                title="Toque para editar dados da empresa"
               >
-                <ImageIcon className="w-6 h-6 stroke-[1.7] text-neutral-700" />
-                <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full bg-white border border-neutral-300 flex items-center justify-center shadow-2xs">
-                  <Pencil className="w-2.5 h-2.5 text-neutral-700 stroke-[2.5]" />
+                <Building2 className="w-6 h-6 text-neutral-700" />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-white shadow-2xs border border-neutral-200 flex items-center justify-center">
+                  <Pencil className="w-2.5 h-2.5 text-neutral-700" />
                 </div>
               </div>
-
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-[17px] font-bold text-neutral-900 tracking-tight leading-snug truncate">
-                  {appData.companyName || 'Conta PJ'}
+              <div className="min-w-0 flex-1">
+                <h3 className="font-bold text-base sm:text-[17px] text-neutral-900 truncate">
+                  {appData.companyName || 'Nu Empresas PJ'}
                 </h3>
-                <p className="text-[13px] text-neutral-600 mt-0.5 flex items-center gap-1.5 flex-wrap">
-                  <span>Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '••••••••-•'}</span>
-                  <button
+                <p className="text-xs text-neutral-500 mt-0.5">
+                  Agência {appData.agency || '0001'} • Conta {appData.accountNumber || '79827260-9'}{' '}
+                  <span 
                     onClick={handleCopyAccountInfo}
-                    className="text-[#820AD1] font-semibold hover:underline cursor-pointer ml-0.5"
+                    className="text-[#5f259f] font-semibold cursor-pointer hover:underline ml-1"
                   >
                     Mais
-                  </button>
+                  </span>
                 </p>
               </div>
             </div>
 
-            {/* Acesso Compartilhado PJ Card */}
+            {/* Acesso Compartilhado PJ Button */}
             <div 
-              id="btn-profile-shared-access"
-              onClick={() => alert("Acesso Compartilhado PJ: gerencie sócios e colaboradores")}
-              className="mt-6 p-4 rounded-2xl bg-[#f5f5f7] hover:bg-[#ebebed] active:scale-[0.99] flex items-center gap-3.5 cursor-pointer transition-all"
+              onClick={() => alert("Acesso Compartilhado PJ: gerencie permissões para sócios e colaboradores.")}
+              className="mt-3 bg-neutral-100/90 hover:bg-neutral-200/70 active:bg-neutral-200 rounded-2xl p-4 flex items-center gap-3.5 cursor-pointer transition-colors"
             >
-              <Users className="w-5 h-5 text-neutral-900 stroke-[1.8]" />
-              <span className="text-[15px] font-semibold text-neutral-900">Acesso Compartilhado PJ</span>
+              <Users className="w-5 h-5 text-neutral-800" />
+              <span className="text-xs sm:text-sm font-semibold text-neutral-900">Acesso Compartilhado PJ</span>
             </div>
 
-            {/* Outras contas pessoais Section */}
-            <div className="mt-6">
-              <p className="text-[13px] text-neutral-500 font-normal mb-2 px-1">
-                Outras contas pessoais
-              </p>
+            {/* Outras Contas Pessoais Section */}
+            <div className="pt-6">
+              <p className="text-neutral-500 text-xs font-medium mb-2">Outras contas pessoais</p>
 
-              {/* User personal account */}
+              {/* Item 1: Conta Pessoal com Nome do Usuário Dinâmico */}
               <div 
-                onClick={() => alert(`Acessando conta pessoal de ${appData.userName || 'Titular da Conta'}`)}
-                className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
+                onClick={() => alert("Alternar para conta pessoal")}
+                className="flex items-center justify-between py-3 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity border-b border-neutral-100"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-full bg-[#f0f1f5] flex items-center justify-center text-neutral-900 shrink-0">
-                    <User className="w-5 h-5 stroke-[1.8]" />
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-700 shrink-0">
+                    <User className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-bold text-neutral-900 leading-tight truncate">
-                      {appData.userName || 'Titular da Conta'}
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900 leading-snug">
+                      {appData.userName || 'Minha Conta'}
                     </p>
-                    <p className="text-[12px] text-neutral-500 mt-0.5">Conta pessoal</p>
+                    <p className="text-xs text-neutral-500">Conta pessoal</p>
                   </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-neutral-900 stroke-[1.8] shrink-0" />
+                <ChevronRight className="w-5 h-5 text-neutral-400" />
               </div>
 
-              {/* Switch account */}
+              {/* Item 2: Trocar conta */}
               <div 
-                onClick={() => alert("Trocar conta: funcionalidade para contas internacionais Nu.")}
-                className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
+                onClick={() => alert("Trocar conta: selecione contas de outros países")}
+                className="flex items-center justify-between py-3 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity border-b border-neutral-100"
               >
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="w-11 h-11 rounded-full bg-purple-100/70 flex items-center justify-center text-[#820AD1] shrink-0">
-                    <RotateCcw className="w-5 h-5 stroke-[1.8]" />
+                <div className="flex items-center gap-3.5">
+                  <div className="w-11 h-11 rounded-full bg-purple-50 flex items-center justify-center text-[#5f259f] shrink-0">
+                    <RotateCcw className="w-5 h-5" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-[15px] font-bold text-neutral-900 leading-tight">
-                      Trocar conta
-                    </p>
-                    <p className="text-[12px] text-neutral-500 mt-0.5">Contas de outros países</p>
+                  <div>
+                    <p className="text-sm font-semibold text-neutral-900 leading-snug">Trocar conta</p>
+                    <p className="text-xs text-neutral-500">Contas de outros países</p>
                   </div>
                 </div>
               </div>
 
-              {/* Logout / Exit */}
+              {/* Item 3: Sair do aplicativo */}
               <div 
-                id="btn-profile-logout"
                 onClick={() => {
                   setShowProfileModal(false);
                   onNavigate('Login');
                 }}
-                className="flex items-center justify-between py-3 px-1 hover:bg-neutral-50 active:bg-neutral-100 rounded-xl cursor-pointer transition-colors"
+                className="flex items-center justify-between py-3 cursor-pointer hover:opacity-80 active:opacity-60 transition-opacity"
               >
                 <div className="flex items-center gap-3.5">
-                  <div className="w-11 h-11 rounded-full bg-[#f0f1f5] flex items-center justify-center text-neutral-900 shrink-0">
-                    <CornerUpLeft className="w-5 h-5 stroke-[1.8]" />
+                  <div className="w-11 h-11 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-800 shrink-0">
+                    <CornerUpLeft className="w-5 h-5" />
                   </div>
                   <div>
-                    <p className="text-[15px] font-bold text-neutral-900 leading-tight">
-                      Sair do aplicativo
-                    </p>
+                    <p className="text-sm font-semibold text-neutral-900 leading-snug">Sair do aplicativo</p>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* Footer: Avalie esta tela */}
-            <div className="mt-8 flex flex-col items-center justify-center">
-              <button
-                onClick={() => {
-                  setToastMessage("Obrigado por avaliar nossa tela!");
-                  setTimeout(() => setToastMessage(null), 2500);
-                }}
-                className="flex items-center gap-2 text-[#820AD1] hover:text-[#6f09b5] font-semibold text-sm cursor-pointer transition-colors"
-              >
-                <Heart className="w-4 h-4 text-[#820AD1] stroke-[2]" />
-                <span>Avalie esta tela</span>
-              </button>
-              <div className="w-36 h-1 bg-black rounded-full mx-auto mt-6 mb-1" />
+            <div 
+              onClick={() => {
+                setToastMessage("Obrigado pela sua avaliação!");
+                setTimeout(() => setToastMessage(null), 2000);
+              }}
+              className="mt-8 mb-2 flex items-center justify-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity"
+            >
+              <Heart className="w-4 h-4 text-[#5f259f] fill-[#5f259f]/20" />
+              <span className="text-xs font-bold text-[#5f259f]">Avalie esta tela</span>
             </div>
           </motion.div>
         </div>
       )}
 
-      {/* Cobrar & Simular Pix Recebido Modal */}
+      {/* Modal Cobrar / Tap to Pay / Link de Pagamento */}
       {showCobrarModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-xs">
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 backdrop-blur-[2px]">
           <motion.div
-            initial={{ opacity: 0, y: 100 }}
+            initial={{ opacity: 0, y: "100%" }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 100 }}
-            className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto"
+            exit={{ opacity: 0, y: "100%" }}
+            transition={{ type: "spring", damping: 28, stiffness: 300 }}
+            className="bg-white rounded-t-[28px] sm:rounded-3xl w-full max-w-md pt-5 pb-6 px-6 text-neutral-900 shadow-2xl overflow-y-auto max-h-[92vh]"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-neutral-100">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-[#820AD1]">
+                <div className="w-8 h-8 rounded-full bg-purple-100 text-[#5f259f] flex items-center justify-center">
                   <QrCode className="w-4 h-4" />
                 </div>
                 <div>
@@ -767,7 +810,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className="w-40 h-40 bg-white p-3 rounded-xl border border-neutral-300 shadow-xs flex flex-col items-center justify-center relative">
                   <QrCode className="w-32 h-32 text-neutral-900" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-7 h-7 bg-[#820AD1] rounded-lg text-white font-black text-[10px] flex items-center justify-center shadow-md">
+                    <div className="w-7 h-7 bg-[#5f259f] rounded-lg text-white font-black text-[10px] flex items-center justify-center shadow-md">
                       nu
                     </div>
                   </div>
@@ -790,7 +833,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </span>
                 </div>
                 <p className="text-[11px] text-purple-200 leading-tight">
-                  Simule o cliente efetuando o pagamento deste Pix. A notificação bancária descerá da aba do celular com o som de confirmação.
+                  Simule um cliente pagando este Pix. A notificação bancária descerá do topo com o som oficial de confirmação.
                 </p>
 
                 <div className="grid grid-cols-3 gap-2 pt-1">

@@ -251,6 +251,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               key={num}
               type="button"
               id={`keypad-digit-${num}`}
+              onPointerDown={(e) => {
+                e.preventDefault();
+                handleDigit(num);
+              }}
               onClick={() => handleDigit(num)}
               disabled={isProcessing || isSuccess}
               className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-neutral-100 active:bg-neutral-300 active:scale-95 text-neutral-900 border border-neutral-200/60 shadow-2xs transition-transform duration-75 flex flex-col items-center justify-center select-none cursor-pointer disabled:opacity-40 disabled:pointer-events-none touch-manipulation"
@@ -274,6 +278,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
               <button
                 type="button"
                 id="keypad-clear-btn"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  handleClear();
+                }}
                 onClick={handleClear}
                 disabled={isProcessing || isSuccess}
                 className="text-xs font-semibold text-neutral-500 hover:text-neutral-900 active:scale-95 py-2 px-3 transition-transform duration-75 cursor-pointer touch-manipulation"
@@ -287,6 +295,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <button
             type="button"
             id="keypad-digit-0"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              handleDigit('0');
+            }}
             onClick={() => handleDigit('0')}
             disabled={isProcessing || isSuccess}
             className="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-neutral-100 active:bg-neutral-300 active:scale-95 text-neutral-900 border border-neutral-200/60 shadow-2xs transition-transform duration-75 flex flex-col items-center justify-center select-none cursor-pointer disabled:opacity-40 disabled:pointer-events-none touch-manipulation"
@@ -301,6 +313,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <button
             type="button"
             id="keypad-delete-btn"
+            onPointerDown={(e) => {
+              e.preventDefault();
+              handleDelete();
+            }}
             onClick={handleDelete}
             disabled={isProcessing || isSuccess || pin.length === 0}
             className="w-18 h-18 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-neutral-600 hover:text-neutral-900 active:scale-95 transition-transform duration-75 cursor-pointer disabled:opacity-20 disabled:pointer-events-none touch-manipulation"
