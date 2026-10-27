@@ -295,10 +295,11 @@ REGRAS CRÍTICAS:
 
       // Officially supported Gemini models prioritized for stability and multimodal vision
       const candidateModels = [
-        "gemini-3.8-flash",
         "gemini-3.1-flash-lite",
         "gemini-flash-latest",
-        "gemini-2.5-flash",
+        "gemini-3.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3.8-flash",
       ];
 
       let lastError: any = null;
@@ -350,7 +351,8 @@ REGRAS CRÍTICAS:
           });
 
           const parsedText = response.text?.trim() || "{}";
-          const parsed = JSON.parse(parsedText);
+          const cleanJson = parsedText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+          const parsed = JSON.parse(cleanJson);
           if (parsed && parsed.name && parsed.name.trim().length > 0) {
             console.log(`[Receipt Extraction] Sucesso com modelo ${modelName}:`, parsed.name, `R$ ${parsed.amount}`);
             resultData = parsed;
@@ -483,8 +485,10 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
       // Supported and resilient models
       const candidateModels = [
         "gemini-3.1-flash-lite",
-        "gemini-3.8-flash",
         "gemini-flash-latest",
+        "gemini-3.5-flash",
+        "gemini-3.6-flash",
+        "gemini-3.8-flash",
       ];
 
       let resultData: any = null;
@@ -551,7 +555,8 @@ Analise atentamente o documento e extraia os campos com máxima precisão:
 
           const response: any = await Promise.race([aiCallPromise, timeoutPromise]);
           const parsedText = response?.text?.trim() || "{}";
-          const parsed = JSON.parse(parsedText);
+          const cleanJson = parsedText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+          const parsed = JSON.parse(cleanJson);
           if (parsed && (parsed.beneficiaryName || parsed.amount || parsed.barcodeNumber)) {
             console.log(`[Bill Extraction] Sucesso com modelo ${modelName}:`, parsed.beneficiaryName, `R$ ${parsed.amount}`, `Venc: ${parsed.dueDate}`);
             resultData = parsed;
